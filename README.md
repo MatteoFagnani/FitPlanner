@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FitPlanner
 
-## Getting Started
+FitPlanner is a Next.js app prepared for deployment on Vercel with a Supabase Postgres database through Prisma.
 
-First, run the development server:
+## Stack
+
+- Next.js 16
+- React 19
+- Prisma ORM
+- Supabase Postgres
+- Vercel
+
+## Local setup
+
+1. Copy `.env.example` to `.env`.
+2. Put your Supabase Postgres connection string into `DATABASE_URL`.
+3. Install dependencies:
+
+```bash
+npm install
+```
+
+4. Apply the schema to your database:
+
+```bash
+npm run db:push
+```
+
+5. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prisma commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run db:generate
+npm run db:push
+npm run db:migrate -- --name init
+npm run db:deploy
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Vercel + Supabase deployment
 
-## Learn More
+### 1. Create the database
 
-To learn more about Next.js, take a look at the following resources:
+Create a Supabase project and open:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Project Settings
+- Database
+- Connection string
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Use the URI / direct connection string for Prisma.
 
-## Deploy on Vercel
+### 2. Add Vercel environment variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+In Vercel, add:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `DATABASE_URL`
+
+Use the same Postgres connection string from Supabase.
+
+### 3. Deploy
+
+This repo is configured so Vercel can:
+
+- generate the Prisma client
+- run Prisma migrations
+- build the Next.js app
+
+The production build command is:
+
+```bash
+npm run db:deploy && npm run build
+```
+
+If you prefer, you can set this same command in the Vercel project settings.
+
+## Important note
+
+The app is now prepared for Supabase Postgres, but the current UI still uses local Zustand mock data in several screens. The database layer is ready for deployment, but the app is not yet fully wired to persistent DB reads and writes everywhere.
