@@ -1,65 +1,175 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+import CoachBanner from "@/components/ui/CoachBanner";
+import MaterialIcon from "@/components/icons/MaterialIcon";
+import WeekSection from "@/components/ui/WeekSection";
+import WorkoutSession from "@/components/ui/WorkoutSession";
+import { useStore } from "@/lib/store/useStore";
+import { calculateLoad } from "@/lib/utils";
+import { motion } from "framer-motion";
+
+export default function TrainingPage() {
+  const { currentUser, programs } = useStore();
+
+  if (!currentUser) return null;
+
+  const activeProgram = programs.find(
+    (program) => program.athleteId === currentUser.id && (!program.status || program.status === "active")
+  );
+
+  if (!activeProgram) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-4xl flex-col items-center justify-center space-y-6 p-4 text-center md:p-6">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-outline-variant bg-surface-container">
+          <MaterialIcon name="fitness_center" className="text-4xl text-outline-variant" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black uppercase tracking-tighter italic">Nessun Protocollo Attivo</h2>
+          <p className="max-w-xs text-sm font-medium text-outline">
+            Il tuo registro di allenamento personale e attualmente vuoto.
+            {currentUser.role === "coach"
+              ? " Assegnati un programma nella sezione Programmi per iniziare il monitoraggio."
+              : " Contatta il tuo coach per sincronizzare il tuo protocollo di allenamento."}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+    );
+  }
+
+  const totalSessions = activeProgram.weeks.reduce((accumulator, week) => accumulator + week.sessions.length, 0);
+  const completedSessions = 4;
+  const progressPercent = (completedSessions / totalSessions) * 100;
+  const totalWeeks = activeProgram.weeks.length;
+
+  return (
+    <div className="relative mx-auto max-w-4xl space-y-8 p-4 md:p-6">
+      <div className="scanline-overlay" />
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MaterialIcon name="analytics" className="text-sm text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-outline">
+              Stato Sincronizzazione
+            </span>
+          </div>
+          <span className="text-[10px] font-black italic text-primary">88% COMPLETATO</span>
         </div>
-      </main>
+        <div className="h-2 overflow-hidden border border-outline-variant bg-surface-container p-[1px]">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            className="glow-sm h-full bg-primary"
+          />
+        </div>
+        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-outline">
+          <span>INIZIO</span>
+          <span>OBIETTIVO</span>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <MaterialIcon name="fitness_center" filled className="text-sm" />
+          <span className="glow-blue text-[10px] font-black uppercase tracking-[0.4em]">
+            Protocollo Attivo
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-4xl font-black uppercase italic leading-none tracking-tighter">
+            {activeProgram.title}
+          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-outline">
+              ID Protocollo: {activeProgram.id.substring(0, 12).toUpperCase()}
+            </p>
+            <div className="border border-green-500/20 bg-green-500/10 px-2 py-[2px] text-[8px] font-black uppercase tracking-tighter text-green-500">
+              In Corso
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+          <div className="rounded-2xl border border-outline-variant/80 bg-white p-4 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-outline">
+              Sessioni
+            </p>
+            <p className="mt-2 text-2xl font-black tracking-tight text-on-surface">
+              {completedSessions}/{totalSessions}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-outline-variant/80 bg-white p-4 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-outline">
+              Settimane
+            </p>
+            <p className="mt-2 text-2xl font-black tracking-tight text-on-surface">{totalWeeks}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <div className="flex items-center justify-between border-b border-outline-variant pb-2">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
+            Registro Allenamenti
+          </h3>
+          <div className="flex gap-4 text-[8px] font-black uppercase tracking-tighter text-outline/50">
+            <span className="flex items-center gap-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+              In Corso
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-surface-container" />
+              In Programma
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {activeProgram.weeks.map((week, index) => (
+            <motion.div
+              key={week.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.08 }}
+            >
+              <WeekSection weekNumber={week.order} defaultExpanded={index === 0}>
+                {week.sessions.map((session) => (
+                  <WorkoutSession
+                    key={session.id}
+                    sessionNumber={session.order}
+                    title={session.title}
+                    status="upcoming"
+                    defaultExpanded={index === 0 && session.order === 1}
+                    exercises={session.exercises.map((exercise) => {
+                      let calculatedLoad = exercise.load;
+
+                      if (exercise.percentage) {
+                        const userRM = currentUser.oneRMs.find((rm) => rm.exercise === exercise.name)?.value;
+                        if (userRM) {
+                          calculatedLoad = calculateLoad(exercise.percentage, userRM);
+                        }
+                      }
+
+                      return {
+                        ...exercise,
+                        load: calculatedLoad || 0,
+                      };
+                    })}
+                  />
+                ))}
+              </WeekSection>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      <div className="mt-12">
+        <CoachBanner
+          title="Nota del Coach"
+          message="Mantieni la massima precisione. Tutti i dati vengono trasmessi al registro centrale in tempo reale."
+        />
+      </div>
     </div>
   );
 }
