@@ -35,8 +35,8 @@ export default function ProgramSessionEditor({
 }: ProgramSessionEditorProps) {
   return (
     <section className="space-y-4 rounded-[1.75rem] border border-outline-variant/80 bg-white p-4 shadow-sm">
-      <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3 self-start sm:self-auto">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-base font-black italic ${accentColorClass}`}
           >
@@ -44,7 +44,7 @@ export default function ProgramSessionEditor({
           </div>
         </div>
 
-        <div className="flex w-full items-center justify-center gap-2 sm:w-auto">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => onCloneSession(session.id)}
@@ -52,14 +52,6 @@ export default function ProgramSessionEditor({
             title="Clona Sessione"
           >
             <MaterialIcon name="content_copy" className="text-lg" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onAddExercise(session.id)}
-            className={`flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-sm ${accentSurfaceClass}`}
-            title="Aggiungi Esercizio"
-          >
-            <MaterialIcon name="add" className="text-lg" />
           </button>
           {canDeleteSession && (
             <button
@@ -165,7 +157,7 @@ export default function ProgramSessionEditor({
               </label>
             </div>
 
-            <div className="mt-3 flex justify-end">
+            <div className="mt-3 flex items-center justify-between gap-2">
               <button
                 type="button"
                 onClick={() => onRemoveExercise(session.id, exerciseIndex)}
@@ -173,6 +165,14 @@ export default function ProgramSessionEditor({
               >
                 <MaterialIcon name="delete_outline" className="text-sm" />
                 Rimuovi
+              </button>
+              <button
+                type="button"
+                onClick={() => onAddExercise(session.id)}
+                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-sm ${accentSurfaceClass}`}
+              >
+                <MaterialIcon name="add" className="text-sm" />
+                Aggiungi
               </button>
             </div>
           </div>
