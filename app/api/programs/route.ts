@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Program } from "@/lib/types";
 import { serializeProgram } from "@/lib/server/programs";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest) {
       title: program.title,
       status: program.status ?? "active",
       coachId: program.coachId,
-      athleteIds: program.athleteIds ?? (program.athleteId ? [program.athleteId] : []),
-      weeks: program.weeks,
+      athleteIds: (program.athleteIds ?? (program.athleteId ? [program.athleteId] : [])) as Prisma.InputJsonValue,
+      weeks: program.weeks as Prisma.InputJsonValue,
       createdAt: new Date(program.createdAt),
     },
   });
