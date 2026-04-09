@@ -12,7 +12,6 @@ interface ProgramSessionEditorProps {
   onCloneSession: (sessionId: string) => void;
   onAddExercise: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
-  onUpdateSessionTitle: (sessionId: string, newTitle: string) => void;
   onRemoveExercise: (sessionId: string, exerciseIndex: number) => void;
   onUpdateExercise: (
     sessionId: string,
@@ -31,7 +30,6 @@ export default function ProgramSessionEditor({
   onCloneSession,
   onAddExercise,
   onDeleteSession,
-  onUpdateSessionTitle,
   onRemoveExercise,
   onUpdateExercise,
 }: ProgramSessionEditorProps) {
@@ -45,15 +43,9 @@ export default function ProgramSessionEditor({
             {String.fromCharCode(65 + sessionIndex)}
           </div>
           <div className="min-w-0 flex-1">
-            <input
-              type="text"
-              value={session.title}
-              onChange={(event) => onUpdateSessionTitle(session.id, event.target.value)}
-              className={`w-full bg-transparent text-base font-black uppercase italic tracking-tight outline-none sm:text-lg ${accentColorClass}`}
-            />
-            <p className="text-[9px] font-black uppercase tracking-[0.28em] text-outline">
-              Sessione {session.id.substring(0, 8).toUpperCase()}
-            </p>
+            <h3 className={`text-base font-black uppercase italic tracking-tight sm:text-lg ${accentColorClass}`}>
+              Sessione {String.fromCharCode(65 + sessionIndex)}
+            </h3>
           </div>
         </div>
 

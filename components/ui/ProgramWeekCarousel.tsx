@@ -52,7 +52,30 @@ export default function ProgramWeekCarousel({
   };
 
   return (
-    <section className="space-y-4 rounded-[2rem] border border-outline-variant/80 bg-white p-4 shadow-sm sm:p-5">
+    <div className="space-y-4">
+      <div
+        className="flex items-center justify-between gap-3"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button
+          type="button"
+          onClick={onRemoveWeek}
+          disabled={weeks.length <= 1}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="remove" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onAddWeek}
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-sm ${accentButtonClass}`}
+        >
+          <MaterialIcon name="add" />
+        </button>
+      </div>
+
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
@@ -64,9 +87,6 @@ export default function ProgramWeekCarousel({
         </button>
 
         <div className="text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-outline">
-            Settimana Corrente
-          </p>
           <h3 className="text-xl font-black uppercase italic tracking-tight text-on-surface sm:text-2xl">
             Week {activeWeek?.order ?? activeWeekIdx + 1}
           </h3>
@@ -84,38 +104,6 @@ export default function ProgramWeekCarousel({
           <MaterialIcon name="arrow_forward_ios" className="text-sm" />
         </button>
       </div>
-
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className="rounded-[1.5rem] border border-outline-variant/70 bg-surface-container-lowest px-4 py-3 text-center"
-      >
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-primary">
-          Swipe per cambiare settimana
-        </p>
-        <p className="mt-1 text-xs font-medium text-outline">
-          Aggiungi o rimuovi settimane senza uscire dall&apos;editor.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <button
-          type="button"
-          onClick={onRemoveWeek}
-          disabled={weeks.length <= 1}
-          className="flex h-11 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <MaterialIcon name="remove" />
-        </button>
-        <button
-          type="button"
-          onClick={onAddWeek}
-          className={`col-span-2 flex h-11 items-center justify-center gap-2 rounded-2xl text-white shadow-sm ${accentButtonClass}`}
-        >
-          <MaterialIcon name="calendar_month" className="text-base" />
-          <span className="text-[11px] font-black uppercase tracking-[0.18em]">Aggiungi Settimana</span>
-        </button>
-      </div>
-    </section>
+    </div>
   );
 }

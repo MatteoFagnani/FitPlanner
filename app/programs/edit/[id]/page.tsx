@@ -138,15 +138,6 @@ function EditProgramForm({
     setWeeks(newWeeks);
   };
 
-  const updateSessionTitle = (sessionId: string, newTitle: string) => {
-    const newWeeks = [...weeks];
-    const session = newWeeks[activeWeekIdx].sessions.find((item) => item.id === sessionId);
-    if (!session) return;
-
-    session.title = newTitle;
-    setWeeks(newWeeks);
-  };
-
   const deleteSession = (sessionId: string) => {
     if (currentWeek.sessions.length <= 1) return;
 
@@ -243,25 +234,17 @@ function EditProgramForm({
           />
         </section>
 
-        <ProgramWeekCarousel
-          weeks={weeks}
-          activeWeekIdx={activeWeekIdx}
-          onSelectWeek={setActiveWeekIdx}
-          onAddWeek={addWeek}
-          onRemoveWeek={removeLastWeek}
-          accentButtonClass="bg-blue-600"
-        />
+        <section className="space-y-4 rounded-[2rem] border border-outline-variant/80 bg-white p-4 shadow-sm sm:p-5">
+          <ProgramWeekCarousel
+            weeks={weeks}
+            activeWeekIdx={activeWeekIdx}
+            onSelectWeek={setActiveWeekIdx}
+            onAddWeek={addWeek}
+            onRemoveWeek={removeLastWeek}
+            accentButtonClass="bg-blue-600"
+          />
 
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-outline">
-                Sessioni Settimana
-              </p>
-              <h3 className="text-xl font-black uppercase italic tracking-tight text-on-surface">
-                Week {currentWeek.order}
-              </h3>
-            </div>
+          <div className="flex justify-end border-t border-outline-variant/70 pt-4">
             <button
               type="button"
               onClick={addSessionToActiveWeek}
@@ -292,7 +275,6 @@ function EditProgramForm({
                     onCloneSession={cloneSession}
                     onAddExercise={addExerciseToSession}
                     onDeleteSession={deleteSession}
-                    onUpdateSessionTitle={updateSessionTitle}
                     onRemoveExercise={removeExercise}
                     onUpdateExercise={updateExercise}
                   />
