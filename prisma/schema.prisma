@@ -15,6 +15,7 @@ model User {
   createdAt        DateTime     @default(now())
   oneRMs           OneRM[]
   programsCoached  Program[]
+  sessions         Session[]
 }
 
 model OneRM {
@@ -39,4 +40,16 @@ model Program {
   createdAt  DateTime
   updatedAt  DateTime @updatedAt
   coach      User     @relation(fields: [coachId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

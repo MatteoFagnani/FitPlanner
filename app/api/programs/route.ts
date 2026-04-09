@@ -3,29 +3,28 @@ import { prisma } from "@/lib/prisma";
 import { Program } from "@/lib/types";
 import { serializeProgram } from "@/lib/server/programs";
 import { Prisma } from "@prisma/client";
+import { getAuthenticatedUser } from "@/lib/server/auth";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
-  const role = searchParams.get("role");
+export async function GET() {
+  const user = await getAuthenticatedUser();
 
-  if (!userId || !role) {
-    return NextResponse.json({ error: "Missing user context" }, { status: 400 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const programs = await prisma.program.findMany({
-    where: role === "coach" ? { coachId: userId } : undefined,
+    where: user.role === "coach" ? { coachId: user.id } : undefined,
     orderBy: { createdAt: "desc" },
   });
 
   const serializedPrograms = programs
     .map(serializeProgram)
     .filter((program) => {
-      if (role === "coach") return true;
+      if (user.role === "coach") return true;
 
       return (
         (!program.status || program.status === "active") &&
-        ((program.athleteIds && program.athleteIds.includes(userId)) || program.athleteId === userId)
+        ((program.athleteIds && program.athleteIds.includes(user.id)) || program.athleteId === user.id)
       );
     });
 
@@ -33,6 +32,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (user.role !== "coach") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = (await request.json()) as { program?: Program };
   const program = body.program;
 
@@ -45,7 +54,7 @@ export async function POST(request: NextRequest) {
       id: program.id,
       title: program.title,
       status: program.status ?? "active",
-      coachId: program.coachId,
+      coachId: user.id,
       athleteIds: (program.athleteIds ?? (program.athleteId ? [program.athleteId] : [])) as unknown as Prisma.InputJsonValue,
       weeks: program.weeks as unknown as Prisma.InputJsonValue,
       createdAt: new Date(program.createdAt),

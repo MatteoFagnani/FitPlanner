@@ -9,18 +9,28 @@ import BottomNav from "@/components/layout/BottomNav";
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const hasHydrated = useStore((state) => state.hasHydrated);
+  const isAuthResolved = useStore((state) => state.isAuthResolved);
   const currentUser = useStore((state) => state.currentUser);
+  const initializeSession = useStore((state) => state.initializeSession);
   const hydrateCurrentUserFromDatabase = useStore((state) => state.hydrateCurrentUserFromDatabase);
   const hydrateProgramsFromDatabase = useStore((state) => state.hydrateProgramsFromDatabase);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    void initializeSession();
+  }, [initializeSession]);
+
+  useEffect(() => {
+    if (!isAuthResolved) return;
 
     if (!currentUser && pathname !== "/login") {
       router.push("/login");
+      return;
     }
-  }, [currentUser, hasHydrated, pathname, router]);
+
+    if (currentUser && pathname === "/login") {
+      router.push("/");
+    }
+  }, [currentUser, isAuthResolved, pathname, router]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -31,7 +41,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   const isLoginPage = pathname === "/login";
 
-  if (!hasHydrated && !isLoginPage) return null;
+  if (!isAuthResolved && !isLoginPage) return null;
   if (!currentUser && !isLoginPage) return null;
 
   return (

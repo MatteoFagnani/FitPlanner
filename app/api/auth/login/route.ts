@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createUserSession, serializeUser, verifyPassword } from "@/lib/server/auth";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -13,7 +14,6 @@ export async function POST(request: NextRequest) {
   const user = await prisma.user.findFirst({
     where: {
       OR: [{ email: identity }, { name: identity }],
-      password,
     },
     include: {
       oneRMs: {
@@ -26,17 +26,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
+  const isValidPassword = await verifyPassword(user.id, user.password, password);
+
+  if (!isValidPassword) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  await createUserSession(user.id);
+
   return NextResponse.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      password: user.password,
-      role: user.role,
-      oneRMs: user.oneRMs.map((oneRM) => ({
-        exercise: oneRM.exercise,
-        value: oneRM.value,
-      })),
-    },
+    user: serializeUser(user),
   });
 }

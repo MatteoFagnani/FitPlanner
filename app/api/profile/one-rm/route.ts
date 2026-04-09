@@ -1,28 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAuthenticatedUser } from "@/lib/server/auth";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const user = body?.user;
   const exercise = body?.exercise;
   const value = body?.value;
 
-  if (!user?.email || !user?.id || !user?.name || !user?.role || !exercise || typeof value !== "number") {
+  if (!exercise || typeof value !== "number") {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const persistedUser = await prisma.user.findUnique({
-    where: { id: user.id },
-  });
-
-  if (!persistedUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   await prisma.oneRM.upsert({
     where: {
       userId_exercise: {
-        userId: persistedUser.id,
+        userId: user.id,
         exercise,
       },
     },
@@ -32,12 +29,12 @@ export async function POST(request: NextRequest) {
     create: {
       exercise,
       value,
-      userId: persistedUser.id,
+      userId: user.id,
     },
   });
 
   const oneRMs = await prisma.oneRM.findMany({
-    where: { userId: persistedUser.id },
+    where: { userId: user.id },
     orderBy: { exercise: "asc" },
   });
 
