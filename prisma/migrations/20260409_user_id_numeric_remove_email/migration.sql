@@ -32,17 +32,29 @@ FROM "User"
 WHERE "Session"."userId" = "User"."id";
 
 ALTER TABLE "Program"
-  ALTER COLUMN "athleteIds" TYPE JSONB
-  USING (
-    COALESCE(
-      (
-        SELECT jsonb_agg("User"."newId" ORDER BY arr.ordinality)
-        FROM jsonb_array_elements_text(COALESCE("Program"."athleteIds"::jsonb, '[]'::jsonb)) WITH ORDINALITY AS arr(value, ordinality)
-        JOIN "User" ON "User"."id" = arr.value
-      ),
-      '[]'::jsonb
-    )
-  );
+  ADD COLUMN "newAthleteIds" JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+UPDATE "Program"
+SET "newAthleteIds" = COALESCE(
+  mapped.ids,
+  '[]'::jsonb
+)
+FROM (
+  SELECT
+    p."id" AS "programId",
+    jsonb_agg(u."newId" ORDER BY arr.ordinality) AS ids
+  FROM "Program" p
+  LEFT JOIN LATERAL jsonb_array_elements_text(COALESCE(p."athleteIds"::jsonb, '[]'::jsonb)) WITH ORDINALITY AS arr(value, ordinality) ON TRUE
+  LEFT JOIN "User" u ON u."id" = arr.value
+  GROUP BY p."id"
+) AS mapped
+WHERE "Program"."id" = mapped."programId";
+
+ALTER TABLE "Program"
+  DROP COLUMN "athleteIds";
+
+ALTER TABLE "Program"
+  RENAME COLUMN "newAthleteIds" TO "athleteIds";
 
 ALTER TABLE "User" DROP CONSTRAINT "User_pkey";
 
