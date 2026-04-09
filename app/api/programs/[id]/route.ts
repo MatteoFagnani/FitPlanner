@@ -22,8 +22,8 @@ export async function PUT(
       title: program.title,
       status: program.status ?? "active",
       coachId: program.coachId,
-      athleteIds: (program.athleteIds ?? (program.athleteId ? [program.athleteId] : [])) as Prisma.InputJsonValue,
-      weeks: program.weeks as Prisma.InputJsonValue,
+      athleteIds: (program.athleteIds ?? (program.athleteId ? [program.athleteId] : [])) as unknown as Prisma.InputJsonValue,
+      weeks: program.weeks as unknown as Prisma.InputJsonValue,
       createdAt: new Date(program.createdAt),
     },
   });
