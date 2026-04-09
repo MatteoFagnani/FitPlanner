@@ -50,14 +50,6 @@ export default function WorkoutSession({
 
       {isExpanded && (
         <div className="mt-4 space-y-2">
-          <div className="grid grid-cols-[minmax(0,1.7fr)_3.25rem_4rem_2.75rem_3.75rem] gap-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.18em] text-outline">
-            <span>Nome</span>
-            <span className="text-center">SxR</span>
-            <span className="text-center">Metodo</span>
-            <span className="text-center">%</span>
-            <span className="text-right">Carico</span>
-          </div>
-
           <div className="space-y-2">
             {exercises.map((exercise) => (
               <ExerciseRow key={exercise.id} exercise={exercise} />
