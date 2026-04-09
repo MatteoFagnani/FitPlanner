@@ -1,5 +1,17 @@
 import { create } from "zustand";
 import { Program, User } from "../types";
+import { ApiError } from "@/lib/client/http";
+import { fetchSession, loginRequest, logoutRequest } from "@/lib/client/auth";
+import { deleteOneRM, fetchProfile, saveOneRM } from "@/lib/client/profile";
+import {
+  createProgramRequest,
+  deleteProgramRequest,
+  fetchPrograms,
+  fetchUsers,
+  patchProgramStatusRequest,
+  toggleProgramSessionCompletionRequest,
+  updateProgramRequest,
+} from "@/lib/client/programs";
 
 function replaceProgram(programs: Program[], nextProgram: Program) {
   return programs.map((program) => (program.id === nextProgram.id ? nextProgram : program));
@@ -54,32 +66,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     }
 
     try {
-      const response = await fetch("/api/auth/session", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          set({
-            currentUser: null,
-            programs: [],
-            isProgramsHydrated: true,
-            isAuthResolved: true,
-            users: [],
-          });
-        } else {
-          set({
-            isProgramsHydrated: true,
-            isAuthResolved: true,
-          });
-        }
-        return;
-      }
-
-      const data = await response.json();
+      const data = await fetchSession();
       set({
         currentUser: data.user,
         isAuthResolved: true,
@@ -87,6 +74,11 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
       await get().hydrateProgramsFromDatabase();
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return;
+      }
+
       console.error("Failed to initialize session", error);
       set({
         currentUser: null,
@@ -99,19 +91,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
   login: async (identity, password) => {
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ identity, password }),
-      });
-
-      if (!response.ok) {
-        return false;
-      }
-
-      const data = await response.json();
+      const data = await loginRequest(identity, password);
       set({
         currentUser: data.user,
         isAuthResolved: true,
@@ -127,9 +107,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
   logout: async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
+      await logoutRequest();
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
@@ -169,19 +147,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     });
 
     try {
-      const response = await fetch("/api/profile/one-rm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ exercise, value }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to persist oneRM");
-      }
-
-      const data = await response.json();
+      const data = await saveOneRM(exercise, value);
       set((currentState) => ({
         currentUser: currentState.currentUser
           ? {
@@ -212,19 +178,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     });
 
     try {
-      const response = await fetch("/api/profile/one-rm", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ exercise }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete oneRM");
-      }
-
-      const data = await response.json();
+      const data = await deleteOneRM(exercise);
       set((currentState) => ({
         currentUser: currentState.currentUser
           ? {
@@ -244,52 +198,30 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
   hydrateCurrentUserFromDatabase: async () => {
     try {
-      const response = await fetch("/api/profile", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          set({ currentUser: null });
-          return;
-        }
-        throw new Error("Failed to hydrate user");
-      }
-
-      const data = await response.json();
+      const data = await fetchProfile();
       set({
         currentUser: data.user,
       });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        set({ currentUser: null });
+        return;
+      }
       console.error("Failed to hydrate current user", error);
     }
   },
 
   hydrateUsersFromDatabase: async () => {
     try {
-      const response = await fetch("/api/users", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          set({ currentUser: null, users: [] });
-          return;
-        }
-        throw new Error("Failed to hydrate users");
-      }
-
-      const data = await response.json();
+      const data = await fetchUsers();
       set({
         users: data.users,
       });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        set({ currentUser: null, users: [] });
+        return;
+      }
       console.error("Failed to hydrate users", error);
     }
   },
@@ -301,24 +233,13 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     }
 
     try {
-      const response = await fetch("/api/programs", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          set({ currentUser: null, programs: [], isProgramsHydrated: true });
-          return;
-        }
-        throw new Error("Failed to hydrate programs");
-      }
-
-      const data = await response.json();
+      const data = await fetchPrograms();
       set({ programs: data.programs, isProgramsHydrated: true });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        set({ currentUser: null, programs: [], isProgramsHydrated: true });
+        return;
+      }
       console.error("Failed to hydrate programs", error);
       set({ isProgramsHydrated: true });
     }
@@ -356,28 +277,12 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     });
 
     try {
-      const response = await fetch(`/api/programs/${programId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "toggle-session-completion",
-          weekId,
-          sessionId,
-          expectedUpdatedAt: existingProgram.updatedAt,
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          clearSessionState(set);
-          return false;
-        }
-        throw new Error("Failed to toggle session completion");
-      }
-
-      const data = await response.json();
+      const data = await toggleProgramSessionCompletionRequest(
+        programId,
+        weekId,
+        sessionId,
+        existingProgram.updatedAt
+      );
       set((currentState) => ({
         programs: currentState.programs.map((program) =>
           program.id === data.program.id ? data.program : program
@@ -386,6 +291,10 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
       console.error("Failed to toggle session completion", error);
       set({ programs: previousPrograms });
       await get().hydrateProgramsFromDatabase();
@@ -395,31 +304,17 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
   addProgram: async (program) => {
     try {
-      const response = await fetch("/api/programs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          program: { ...program, status: program.status ?? "active" },
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          clearSessionState(set);
-          return false;
-        }
-        throw new Error("Failed to create program");
-      }
-
-      const data = await response.json();
+      const data = await createProgramRequest(program);
       set((state) => ({
         isProgramsHydrated: true,
         programs: upsertProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
       console.error("Failed to create program", error);
       return false;
     }
@@ -427,33 +322,21 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
   updateProgram: async (program) => {
     try {
-      const response = await fetch(`/api/programs/${program.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ program }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          clearSessionState(set);
-          return false;
-        }
-        if (response.status === 409) {
-          await get().hydrateProgramsFromDatabase();
-          return false;
-        }
-        throw new Error("Failed to update program");
-      }
-
-      const data = await response.json();
+      const data = await updateProgramRequest(program);
       set((state) => ({
         isProgramsHydrated: true,
         programs: replaceProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
+      if (error instanceof ApiError && error.status === 409) {
+        await get().hydrateProgramsFromDatabase();
+        return false;
+      }
       console.error("Failed to update program", error);
       return false;
     }
@@ -461,17 +344,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
 
   deleteProgram: async (id) => {
     try {
-      const response = await fetch(`/api/programs/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          clearSessionState(set);
-          return false;
-        }
-        throw new Error("Failed to delete program");
-      }
+      await deleteProgramRequest(id);
 
       set((state) => ({
         isProgramsHydrated: true,
@@ -479,6 +352,10 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       }));
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
       console.error("Failed to delete program", error);
       return false;
     }
@@ -491,33 +368,21 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     }
 
     try {
-      const response = await fetch(`/api/programs/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: "archived", expectedUpdatedAt: existingProgram.updatedAt }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          clearSessionState(set);
-          return false;
-        }
-        if (response.status === 409) {
-          await get().hydrateProgramsFromDatabase();
-          return false;
-        }
-        throw new Error("Failed to archive program");
-      }
-
-      const data = await response.json();
+      const data = await patchProgramStatusRequest(id, "archived", existingProgram.updatedAt);
       set((state) => ({
         isProgramsHydrated: true,
         programs: replaceProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
+      if (error instanceof ApiError && error.status === 409) {
+        await get().hydrateProgramsFromDatabase();
+        return false;
+      }
       console.error("Failed to archive program", error);
       return false;
     }
@@ -530,33 +395,21 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     }
 
     try {
-      const response = await fetch(`/api/programs/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: "active", expectedUpdatedAt: existingProgram.updatedAt }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          clearSessionState(set);
-          return false;
-        }
-        if (response.status === 409) {
-          await get().hydrateProgramsFromDatabase();
-          return false;
-        }
-        throw new Error("Failed to restore program");
-      }
-
-      const data = await response.json();
+      const data = await patchProgramStatusRequest(id, "active", existingProgram.updatedAt);
       set((state) => ({
         isProgramsHydrated: true,
         programs: replaceProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
+      if (error instanceof ApiError && error.status === 409) {
+        await get().hydrateProgramsFromDatabase();
+        return false;
+      }
       console.error("Failed to restore program", error);
       return false;
     }

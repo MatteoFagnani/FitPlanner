@@ -6,12 +6,22 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  coach
+  athlete
+}
+
+enum ProgramStatus {
+  active
+  archived
+}
+
 model User {
   id               String       @id @default(cuid())
   name             String
   email            String       @unique
   password         String
-  role             String
+  role             UserRole
   createdAt        DateTime     @default(now())
   oneRMs           OneRM[]
   programsCoached  Program[]
@@ -33,7 +43,7 @@ model OneRM {
 model Program {
   id         String   @id
   title      String
-  status     String   @default("active")
+  status     ProgramStatus   @default(active)
   coachId    String
   athleteIds Json
   weeks      Json
