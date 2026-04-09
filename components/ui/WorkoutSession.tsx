@@ -21,9 +21,9 @@ const statusStyles: Record<NonNullable<WorkoutSessionProps["status"]>, string> =
 };
 
 const statusLabels: Record<NonNullable<WorkoutSessionProps["status"]>, string> = {
-  completed: "Completed",
-  upcoming: "Planned",
-  locked: "Locked",
+  completed: "Completata",
+  upcoming: "In Programma",
+  locked: "Bloccata",
 };
 
 export default function WorkoutSession({
@@ -45,7 +45,7 @@ export default function WorkoutSession({
         <div className="min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
-              Session {sessionNumber}
+              Sessione {sessionNumber}
             </span>
             <span
               className={cn(
@@ -61,13 +61,13 @@ export default function WorkoutSession({
               {title}
             </h4>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-outline">
-              {exercises.length} exercises
+              {exercises.length} esercizi
             </p>
           </div>
         </div>
         <div className="mt-1 flex shrink-0 items-center gap-2">
           <div className="hidden rounded-full border border-outline-variant/80 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-outline sm:block">
-            {isExpanded ? "Open" : "Closed"}
+            {isExpanded ? "Aperta" : "Chiusa"}
           </div>
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-primary shadow-sm">
             <MaterialIcon
@@ -80,14 +80,12 @@ export default function WorkoutSession({
 
       {isExpanded && (
         <div className="mt-4 space-y-2">
-          <div className="-mx-4 overflow-x-auto px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-outline sm:mx-0 sm:px-0">
-            <div className="grid min-w-[30rem] grid-cols-[minmax(9rem,1.8fr)_4.5rem_5.5rem_3.5rem_4.5rem] gap-2 px-3">
-              <span>Name</span>
-              <span className="text-center">Sets</span>
-              <span className="text-center">Method</span>
-              <span className="text-center">%</span>
-              <span className="text-right">Load</span>
-            </div>
+          <div className="grid grid-cols-[minmax(0,1.7fr)_3.25rem_4rem_2.75rem_3.75rem] gap-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.18em] text-outline">
+            <span>Nome</span>
+            <span className="text-center">SxR</span>
+            <span className="text-center">Metodo</span>
+            <span className="text-center">%</span>
+            <span className="text-right">Carico</span>
           </div>
 
           <div className="space-y-2">

@@ -28,13 +28,13 @@ export default function WeekSection({
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             Week {weekNumber}
           </p>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-on-surface">
-            Weekly Plan
+          <h3 className="mt-1 text-lg font-black tracking-tight text-on-surface sm:text-xl">
+            Piano Settimanale
           </h3>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden rounded-full border border-outline-variant/80 bg-surface-container-low px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-outline sm:block">
-            {isExpanded ? "Expanded" : "Collapsed"}
+            {isExpanded ? "Aperta" : "Chiusa"}
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
             <MaterialIcon

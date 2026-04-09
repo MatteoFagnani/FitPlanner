@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 
 const SESSION_COOKIE_NAME = "fitplanner_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30;
+const MAX_SESSIONS_PER_USER = 5;
 
 export function serializeUser(user: {
   id: string;
@@ -60,6 +61,12 @@ export async function createUserSession(userId: string) {
   const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
+  await prisma.session.deleteMany({
+    where: {
+      OR: [{ userId, expiresAt: { lte: new Date() } }],
+    },
+  });
+
   await prisma.session.create({
     data: {
       tokenHash,
@@ -67,6 +74,22 @@ export async function createUserSession(userId: string) {
       userId,
     },
   });
+
+  const activeSessions = await prisma.session.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+
+  if (activeSessions.length > MAX_SESSIONS_PER_USER) {
+    await prisma.session.deleteMany({
+      where: {
+        id: {
+          in: activeSessions.slice(MAX_SESSIONS_PER_USER).map((session) => session.id),
+        },
+      },
+    });
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
@@ -131,6 +154,23 @@ export async function getAuthenticatedUser() {
     await clearUserSession();
     return null;
   }
+
+  const refreshedExpiry = new Date(Date.now() + SESSION_DURATION_MS);
+
+  await prisma.session.update({
+    where: { id: session.id },
+    data: {
+      expiresAt: refreshedExpiry,
+    },
+  });
+
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    expires: refreshedExpiry,
+    path: "/",
+  });
 
   return session.user;
 }

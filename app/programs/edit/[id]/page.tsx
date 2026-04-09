@@ -161,7 +161,7 @@ function EditProgramForm({
     event.preventDefault();
 
     if (selectedAthleteIds.length === 0) {
-      alert("Seleziona almeno un atleta.");
+      alert("Seleziona almeno un utente.");
       return;
     }
 

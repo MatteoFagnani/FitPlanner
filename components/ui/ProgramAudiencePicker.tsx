@@ -18,8 +18,15 @@ export default function ProgramAudiencePicker({
 }: ProgramAudiencePickerProps) {
   const [query, setQuery] = useState("");
 
-  const athleteUsers = useMemo(
-    () => users.filter((user) => user.role === "athlete"),
+  const availableUsers = useMemo(
+    () =>
+      [...users].sort((left, right) => {
+        if (left.role !== right.role) {
+          return left.role === "coach" ? -1 : 1;
+        }
+
+        return left.name.localeCompare(right.name);
+      }),
     [users]
   );
 
@@ -27,15 +34,15 @@ export default function ProgramAudiencePicker({
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return athleteUsers;
+      return availableUsers;
     }
 
-    return athleteUsers.filter((user) =>
+    return availableUsers.filter((user) =>
       `${user.name} ${user.email}`.toLowerCase().includes(normalizedQuery)
     );
-  }, [athleteUsers, query]);
+  }, [availableUsers, query]);
 
-  const selectedUsers = athleteUsers.filter((user) => selectedIds.includes(user.id));
+  const selectedUsers = availableUsers.filter((user) => selectedIds.includes(user.id));
 
   const toggleUser = (userId: string) => {
     if (selectedIds.includes(userId)) {
@@ -60,7 +67,7 @@ export default function ProgramAudiencePicker({
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cerca atleta per nome o email"
+            placeholder="Cerca coach o atleta"
             className="w-full min-w-0 bg-transparent text-sm font-medium outline-none placeholder:text-outline/50"
           />
         </div>
@@ -68,7 +75,7 @@ export default function ProgramAudiencePicker({
         <div className="mt-3 flex flex-wrap gap-2">
           {selectedUsers.length === 0 && (
             <p className="text-xs font-medium text-outline">
-              Nessun atleta selezionato.
+              Nessun utente selezionato.
             </p>
           )}
 
@@ -80,6 +87,9 @@ export default function ProgramAudiencePicker({
               className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary"
             >
               <span className="truncate">{user.name}</span>
+              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-outline">
+                {user.role}
+              </span>
               <MaterialIcon name="close" className="text-sm" />
             </button>
           ))}
@@ -102,7 +112,12 @@ export default function ProgramAudiencePicker({
                 )}
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-on-surface">{user.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-bold text-on-surface">{user.name}</p>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-outline">
+                      {user.role}
+                    </span>
+                  </div>
                   <p className="truncate text-[11px] text-outline">{user.email}</p>
                 </div>
                 <div

@@ -1,15 +1,143 @@
 "use client";
 
-import CoachBanner from "@/components/ui/CoachBanner";
 import MaterialIcon from "@/components/icons/MaterialIcon";
 import WeekSection from "@/components/ui/WeekSection";
 import WorkoutSession from "@/components/ui/WorkoutSession";
+import { Program, User } from "@/lib/types";
 import { useStore } from "@/lib/store/useStore";
 import { calculateLoad } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
+
+function ProgramWeekViewport({
+  activeProgram,
+  currentUser,
+}: {
+  activeProgram: Program;
+  currentUser: User;
+}) {
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const currentWeek = activeProgram.weeks[currentWeekIndex] ?? activeProgram.weeks[0];
+
+  const goToPreviousWeek = () => {
+    setCurrentWeekIndex((current) => Math.max(0, current - 1));
+  };
+
+  const goToNextWeek = () => {
+    setCurrentWeekIndex((current) => Math.min(activeProgram.weeks.length - 1, current + 1));
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX === null) return;
+
+    const deltaX = event.changedTouches[0]?.clientX - touchStartX;
+    setTouchStartX(null);
+
+    if (deltaX <= -40) {
+      goToNextWeek();
+    }
+
+    if (deltaX >= 40) {
+      goToPreviousWeek();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-[1.75rem] border border-outline-variant/80 bg-white p-3 shadow-sm">
+        <button
+          type="button"
+          onClick={goToPreviousWeek}
+          disabled={currentWeekIndex === 0}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="arrow_back_ios_new" className="text-base" />
+        </button>
+
+        <div className="text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-outline">
+            Settimana Corrente
+          </p>
+          <h3 className="text-2xl font-black uppercase italic tracking-tight text-on-surface">
+            Week {currentWeek.order}
+          </h3>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
+            {currentWeekIndex + 1} / {activeProgram.weeks.length}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={goToNextWeek}
+          disabled={currentWeekIndex === activeProgram.weeks.length - 1}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="arrow_forward_ios" className="text-base" />
+        </button>
+      </div>
+
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentWeek.id}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.2 }}
+          >
+            <WeekSection weekNumber={currentWeek.order} defaultExpanded>
+              {currentWeek.sessions.map((session) => (
+                <WorkoutSession
+                  key={session.id}
+                  sessionNumber={session.order}
+                  title={session.title}
+                  status={currentWeekIndex === 0 && session.order === 1 ? "completed" : "upcoming"}
+                  defaultExpanded={session.order === 1}
+                  exercises={session.exercises.map((exercise) => {
+                    let calculatedLoad = exercise.load;
+
+                    if (exercise.percentage) {
+                      const userRM = currentUser.oneRMs.find((rm) => rm.exercise === exercise.name)?.value;
+                      if (userRM) {
+                        calculatedLoad = calculateLoad(exercise.percentage, userRM);
+                      }
+                    }
+
+                    return {
+                      ...exercise,
+                      load: calculatedLoad || 0,
+                    };
+                  })}
+                />
+              ))}
+            </WeekSection>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
 
 export default function TrainingPage() {
   const { currentUser, programs, isProgramsHydrated } = useStore();
+
+  const activeProgram = currentUser
+    ? programs.find(
+        (program) =>
+          (!program.status || program.status === "active") &&
+          ((program.athleteIds && program.athleteIds.includes(currentUser.id)) ||
+            program.athleteId === currentUser.id)
+      )
+    : undefined;
+
+  useEffect(() => {
+    setCurrentWeekIndex(0);
+  }, [activeProgram?.id]);
 
   if (!currentUser) return null;
 
@@ -23,13 +151,6 @@ export default function TrainingPage() {
       </div>
     );
   }
-
-  const activeProgram = programs.find(
-    (program) =>
-      (!program.status || program.status === "active") &&
-      ((program.athleteIds && program.athleteIds.includes(currentUser.id)) ||
-        program.athleteId === currentUser.id)
-  );
 
   if (!activeProgram) {
     return (
@@ -127,63 +248,13 @@ export default function TrainingPage() {
           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
             Registro Allenamenti
           </h3>
-          <div className="flex gap-4 text-[8px] font-black uppercase tracking-tighter text-outline/50">
-            <span className="flex items-center gap-1">
-              <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
-              In Corso
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="h-1.5 w-1.5 rounded-full bg-surface-container" />
-              In Programma
-            </span>
-          </div>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">
+            Swipe per cambiare settimana
+          </span>
         </div>
 
-        <div className="space-y-6">
-          {activeProgram.weeks.map((week, index) => (
-            <motion.div
-              key={week.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08 }}
-            >
-              <WeekSection weekNumber={week.order} defaultExpanded={index === 0}>
-                {week.sessions.map((session) => (
-                  <WorkoutSession
-                    key={session.id}
-                    sessionNumber={session.order}
-                    title={session.title}
-                    status="upcoming"
-                    defaultExpanded={index === 0 && session.order === 1}
-                    exercises={session.exercises.map((exercise) => {
-                      let calculatedLoad = exercise.load;
-
-                      if (exercise.percentage) {
-                        const userRM = currentUser.oneRMs.find((rm) => rm.exercise === exercise.name)?.value;
-                        if (userRM) {
-                          calculatedLoad = calculateLoad(exercise.percentage, userRM);
-                        }
-                      }
-
-                      return {
-                        ...exercise,
-                        load: calculatedLoad || 0,
-                      };
-                    })}
-                  />
-                ))}
-              </WeekSection>
-            </motion.div>
-          ))}
-        </div>
+        <ProgramWeekViewport key={activeProgram.id} activeProgram={activeProgram} currentUser={currentUser} />
       </section>
-
-      <div className="mt-12">
-        <CoachBanner
-          title="Nota del Coach"
-          message="Mantieni la massima precisione. Tutti i dati vengono trasmessi al registro centrale in tempo reale."
-        />
-      </div>
     </div>
   );
 }
