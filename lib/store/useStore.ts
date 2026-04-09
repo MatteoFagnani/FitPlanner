@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { Program, User } from "../types";
 
 interface FitPlannerState {
+  hasHydrated: boolean;
   currentUser: User | null;
   programs: Program[];
   isProgramsHydrated: boolean;
@@ -25,6 +26,7 @@ interface FitPlannerState {
 export const useStore = create<FitPlannerState>()(
   persist(
     (set) => ({
+      hasHydrated: false,
       currentUser: null,
       programs: [],
       isProgramsHydrated: false,
@@ -331,6 +333,13 @@ export const useStore = create<FitPlannerState>()(
       partialize: (state) => ({
         currentUser: state.currentUser,
       }),
+      onRehydrateStorage: () => (state) => {
+        useStore.setState((currentState) => ({
+          ...currentState,
+          currentUser: state?.currentUser ?? null,
+          hasHydrated: true,
+        }));
+      },
     }
   )
 );
