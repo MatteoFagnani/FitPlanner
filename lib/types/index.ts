@@ -44,6 +44,7 @@ export interface Program {
   status?: 'active' | 'archived';
   coachId: string;
   athleteId?: string;
+  athleteIds?: string[];
   weeks: Week[];
   createdAt: string;
 }

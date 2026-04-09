@@ -94,7 +94,7 @@ export default function ProgramsPage() {
           initial={{ opacity: 0, x: -10 }} 
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-4xl font-extrabold tracking-tighter uppercase italic leading-none"
+          className="text-2xl font-extrabold tracking-tighter uppercase italic leading-none sm:text-4xl"
         >
           Gestione
         </motion.h2>
@@ -192,11 +192,11 @@ export default function ProgramsPage() {
                   >
                     <div className="flex items-center gap-2">
                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
-                       <p className="text-lg font-black uppercase text-blue-600 italic tracking-tighter glow-blue leading-none">
+                       <p className="text-base font-black uppercase text-blue-600 italic tracking-tighter glow-blue leading-none sm:text-lg">
                         {prog.title}
                       </p>
                     </div>
-                    <div className="flex gap-4 mt-1">
+                    <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-4">
                        <p className="text-[9px] text-outline font-bold uppercase tracking-widest">
                         ID: {prog.id.substring(0, 8)} | VERSIONE 01
                       </p>
@@ -204,27 +204,30 @@ export default function ProgramsPage() {
                         CREATO: {new Date(prog.createdAt).toLocaleDateString('it-IT')}
                       </p>
                     </div>
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
+                      Condiviso con {prog.athleteIds?.length || (prog.athleteId ? 1 : 0)} utenti
+                    </p>
                   </Link>
 
                   {/* Actions Bar */}
-                  <div className="flex items-center gap-1 p-2 md:p-5 bg-surface-container-lowest border-t md:border-t-0 md:border-l border-outline-variant/30">
+                  <div className="flex items-center justify-end gap-1 border-t border-outline-variant/30 bg-surface-container-lowest p-2 md:border-l md:border-t-0 md:p-5">
                     <button 
                       onClick={() => confirmArchive(prog.id)}
-                      className="w-10 h-10 flex items-center justify-center text-outline hover:text-blue-600 hover:bg-blue-50 transition-all"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl text-outline transition-all hover:bg-blue-50 hover:text-blue-600"
                       title="Archivia"
                     >
                       <MaterialIcon name="inventory_2" className="text-xl" />
                     </button>
                     <button 
                       onClick={() => confirmDelete(prog.id)}
-                      className="w-10 h-10 flex items-center justify-center text-outline hover:text-error hover:bg-error/10 transition-all"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl text-outline transition-all hover:bg-error/10 hover:text-error"
                       title="Elimina"
                     >
                       <MaterialIcon name="delete" className="text-xl" />
                     </button>
                     <Link 
                       href={`/programs/edit/${prog.id}`}
-                      className="w-10 h-10 flex items-center justify-center text-primary bg-primary/5 hover:bg-primary hover:text-white transition-all ml-2"
+                      className="ml-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5 text-primary transition-all hover:bg-primary hover:text-white"
                       title="Modifica"
                     >
                       <MaterialIcon name="edit" className="text-xl" />

@@ -14,7 +14,10 @@ export default function TrainingPage() {
   if (!currentUser) return null;
 
   const activeProgram = programs.find(
-    (program) => program.athleteId === currentUser.id && (!program.status || program.status === "active")
+    (program) =>
+      (!program.status || program.status === "active") &&
+      ((program.athleteIds && program.athleteIds.includes(currentUser.id)) ||
+        program.athleteId === currentUser.id)
   );
 
   if (!activeProgram) {
@@ -77,7 +80,7 @@ export default function TrainingPage() {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-4xl font-black uppercase italic leading-none tracking-tighter">
+          <h2 className="text-3xl font-black uppercase italic leading-none tracking-tighter sm:text-4xl">
             {activeProgram.title}
           </h2>
           <div className="flex flex-wrap items-center gap-3">
