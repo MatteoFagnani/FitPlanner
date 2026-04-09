@@ -11,16 +11,14 @@ interface SessionCardProps {
 }
 
 export default function SessionCard({
-  sessionNumber,
   title,
   status,
   exercises,
 }: SessionCardProps) {
   return (
     <WorkoutSession
-      sessionNumber={sessionNumber}
       title={title}
-      status={status}
+      completed={status === "completed"}
       exercises={exercises}
     />
   );
