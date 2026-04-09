@@ -5,8 +5,12 @@ function isStringArray(value: Prisma.JsonValue | null | undefined): value is str
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function isWeeksArray(value: Prisma.JsonValue | null | undefined): value is Week[] {
-  return Array.isArray(value);
+function parseWeeks(value: Prisma.JsonValue | null | undefined): Week[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value as unknown as Week[];
 }
 
 export function serializeProgram(program: {
@@ -24,7 +28,7 @@ export function serializeProgram(program: {
     status: program.status as Program["status"],
     coachId: program.coachId,
     athleteIds: isStringArray(program.athleteIds) ? program.athleteIds : [],
-    weeks: isWeeksArray(program.weeks) ? program.weeks : [],
+    weeks: parseWeeks(program.weeks),
     createdAt: program.createdAt.toISOString(),
   };
 }
