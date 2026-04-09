@@ -177,7 +177,7 @@ export default function NewProgramPage() {
     setWeeks(newWeeks);
   };
 
-  const handleCreate = (event: React.FormEvent) => {
+  const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (selectedAthleteIds.length === 0) {
       alert("Seleziona almeno un atleta.");
@@ -194,10 +194,15 @@ export default function NewProgramPage() {
     };
 
     setIsSyncing(true);
-    setTimeout(() => {
-      addProgram(newProgram);
+    const success = await addProgram(newProgram);
+
+    if (success) {
       router.push("/programs");
-    }, 900);
+      return;
+    }
+
+    setIsSyncing(false);
+    alert("Non sono riuscito a salvare il programma sul database.");
   };
 
   return (

@@ -38,7 +38,7 @@ function EditProgramForm({
   currentUserId: string;
   existingProgram: Program;
   users: ReturnType<typeof useStore.getState>["users"];
-  onUpdateProgram: (program: Program) => void;
+  onUpdateProgram: (program: Program) => Promise<boolean>;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(existingProgram.title);
@@ -157,7 +157,7 @@ function EditProgramForm({
     setWeeks(newWeeks);
   };
 
-  const handleUpdate = (event: React.FormEvent) => {
+  const handleUpdate = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (selectedAthleteIds.length === 0) {
@@ -175,10 +175,15 @@ function EditProgramForm({
     };
 
     setIsSyncing(true);
-    setTimeout(() => {
-      onUpdateProgram(updatedProgram);
+    const success = await onUpdateProgram(updatedProgram);
+
+    if (success) {
       router.push("/programs");
-    }, 900);
+      return;
+    }
+
+    setIsSyncing(false);
+    alert("Non sono riuscito ad aggiornare il programma sul database.");
   };
 
   return (
@@ -333,11 +338,20 @@ function EditProgramForm({
 
 export default function EditProgramPage() {
   const { id } = useParams();
-  const { currentUser, users, programs, hydrateUsersFromDatabase, updateProgram } = useStore();
+  const {
+    currentUser,
+    users,
+    programs,
+    isProgramsHydrated,
+    hydrateUsersFromDatabase,
+    hydrateProgramsFromDatabase,
+    updateProgram,
+  } = useStore();
 
   useEffect(() => {
     hydrateUsersFromDatabase();
-  }, [hydrateUsersFromDatabase]);
+    hydrateProgramsFromDatabase();
+  }, [hydrateProgramsFromDatabase, hydrateUsersFromDatabase]);
 
   const existingProgram = useMemo(
     () => programs.find((program) => program.id === id),
@@ -345,7 +359,7 @@ export default function EditProgramPage() {
   );
 
   if (!currentUser || currentUser.role !== "coach") return null;
-  if (!existingProgram) {
+  if (!isProgramsHydrated || !existingProgram) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />

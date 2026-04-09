@@ -10,12 +10,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const currentUser = useStore((state) => state.currentUser);
+  const hydrateCurrentUserFromDatabase = useStore((state) => state.hydrateCurrentUserFromDatabase);
+  const hydrateProgramsFromDatabase = useStore((state) => state.hydrateProgramsFromDatabase);
 
   useEffect(() => {
     if (!currentUser && pathname !== "/login") {
       router.push("/login");
     }
   }, [currentUser, pathname, router]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    void hydrateCurrentUserFromDatabase();
+    void hydrateProgramsFromDatabase();
+  }, [currentUser?.id, hydrateCurrentUserFromDatabase, hydrateProgramsFromDatabase]);
 
   const isLoginPage = pathname === "/login";
 

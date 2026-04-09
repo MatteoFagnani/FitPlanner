@@ -9,9 +9,20 @@ import { calculateLoad } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 export default function TrainingPage() {
-  const { currentUser, programs } = useStore();
+  const { currentUser, programs, isProgramsHydrated } = useStore();
 
   if (!currentUser) return null;
+
+  if (!isProgramsHydrated) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
+          Sincronizzazione in corso
+        </p>
+      </div>
+    );
+  }
 
   const activeProgram = programs.find(
     (program) =>

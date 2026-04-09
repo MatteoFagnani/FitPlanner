@@ -5,6 +5,7 @@ import { Program, User } from "../types";
 interface FitPlannerState {
   currentUser: User | null;
   programs: Program[];
+  isProgramsHydrated: boolean;
   users: User[];
   
   // Actions
@@ -13,11 +14,12 @@ interface FitPlannerState {
   setUserOneRM: (exercise: string, value: number) => Promise<boolean>;
   hydrateCurrentUserFromDatabase: () => Promise<void>;
   hydrateUsersFromDatabase: () => Promise<void>;
-  addProgram: (program: Program) => void;
-  updateProgram: (program: Program) => void;
-  deleteProgram: (id: string) => void;
-  archiveProgram: (id: string) => void;
-  restoreProgram: (id: string) => void;
+  hydrateProgramsFromDatabase: () => Promise<void>;
+  addProgram: (program: Program) => Promise<boolean>;
+  updateProgram: (program: Program) => Promise<boolean>;
+  deleteProgram: (id: string) => Promise<boolean>;
+  archiveProgram: (id: string) => Promise<boolean>;
+  restoreProgram: (id: string) => Promise<boolean>;
 }
 
 export const useStore = create<FitPlannerState>()(
@@ -25,6 +27,7 @@ export const useStore = create<FitPlannerState>()(
     (set) => ({
       currentUser: null,
       programs: [],
+      isProgramsHydrated: false,
       users: [],
 
       login: async (identity, password) => {
@@ -43,6 +46,18 @@ export const useStore = create<FitPlannerState>()(
 
           const data = await response.json();
           set({ currentUser: data.user });
+
+          const programsResponse = await fetch(
+            `/api/programs?userId=${encodeURIComponent(data.user.id)}&role=${encodeURIComponent(data.user.role)}`
+          );
+
+          if (programsResponse.ok) {
+            const programsData = await programsResponse.json();
+            set({ programs: programsData.programs, isProgramsHydrated: true });
+          } else {
+            set({ isProgramsHydrated: true });
+          }
+
           return true;
         } catch (error) {
           console.error("Login failed", error);
@@ -50,7 +65,7 @@ export const useStore = create<FitPlannerState>()(
         }
       },
 
-      logout: () => set({ currentUser: null }),
+      logout: () => set({ currentUser: null, programs: [], isProgramsHydrated: false, users: [] }),
 
       setUserOneRM: async (exercise, value) => {
         const state = useStore.getState();
@@ -160,28 +175,162 @@ export const useStore = create<FitPlannerState>()(
         }
       },
 
-      addProgram: (program) => set((state) => ({
-        programs: [...state.programs, { ...program, status: 'active' }]
-      })),
+      hydrateProgramsFromDatabase: async () => {
+        const state = useStore.getState();
+        if (!state.currentUser) {
+          set({ programs: [], isProgramsHydrated: true });
+          return;
+        }
 
-      updateProgram: (program) => set((state) => ({
-        programs: state.programs.map(p => p.id === program.id ? program : p)
-      })),
+        try {
+          const response = await fetch(
+            `/api/programs?userId=${encodeURIComponent(state.currentUser.id)}&role=${encodeURIComponent(state.currentUser.role)}`
+          );
 
-      deleteProgram: (id) => set((state) => ({
-        programs: state.programs.filter(p => p.id !== id)
-      })),
-      
-      archiveProgram: (id: string) => set((state) => ({
-        programs: state.programs.map(p => p.id === id ? { ...p, status: 'archived' } : p)
-      })),
+          if (!response.ok) {
+            throw new Error("Failed to hydrate programs");
+          }
 
-      restoreProgram: (id: string) => set((state) => ({
-        programs: state.programs.map(p => p.id === id ? { ...p, status: 'active' } : p)
-      })),
+          const data = await response.json();
+          set({ programs: data.programs, isProgramsHydrated: true });
+        } catch (error) {
+          console.error("Failed to hydrate programs", error);
+          set({ isProgramsHydrated: true });
+        }
+      },
+
+      addProgram: async (program) => {
+        try {
+          const response = await fetch("/api/programs", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              program: { ...program, status: program.status ?? "active" },
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to create program");
+          }
+
+          const data = await response.json();
+          set((state) => ({
+            isProgramsHydrated: true,
+            programs: [data.program, ...state.programs.filter((item) => item.id !== data.program.id)],
+          }));
+          return true;
+        } catch (error) {
+          console.error("Failed to create program", error);
+          return false;
+        }
+      },
+
+      updateProgram: async (program) => {
+        try {
+          const response = await fetch(`/api/programs/${program.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ program }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to update program");
+          }
+
+          const data = await response.json();
+          set((state) => ({
+            isProgramsHydrated: true,
+            programs: state.programs.map((item) => (item.id === data.program.id ? data.program : item)),
+          }));
+          return true;
+        } catch (error) {
+          console.error("Failed to update program", error);
+          return false;
+        }
+      },
+
+      deleteProgram: async (id) => {
+        try {
+          const response = await fetch(`/api/programs/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to delete program");
+          }
+
+          set((state) => ({
+            isProgramsHydrated: true,
+            programs: state.programs.filter((program) => program.id !== id),
+          }));
+          return true;
+        } catch (error) {
+          console.error("Failed to delete program", error);
+          return false;
+        }
+      },
+
+      archiveProgram: async (id) => {
+        try {
+          const response = await fetch(`/api/programs/${id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ status: "archived" }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to archive program");
+          }
+
+          const data = await response.json();
+          set((state) => ({
+            isProgramsHydrated: true,
+            programs: state.programs.map((program) => (program.id === data.program.id ? data.program : program)),
+          }));
+          return true;
+        } catch (error) {
+          console.error("Failed to archive program", error);
+          return false;
+        }
+      },
+
+      restoreProgram: async (id) => {
+        try {
+          const response = await fetch(`/api/programs/${id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ status: "active" }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to restore program");
+          }
+
+          const data = await response.json();
+          set((state) => ({
+            isProgramsHydrated: true,
+            programs: state.programs.map((program) => (program.id === data.program.id ? data.program : program)),
+          }));
+          return true;
+        } catch (error) {
+          console.error("Failed to restore program", error);
+          return false;
+        }
+      },
     }),
     {
       name: "fitplanner-storage",
+      partialize: (state) => ({
+        currentUser: state.currentUser,
+      }),
     }
   )
 );

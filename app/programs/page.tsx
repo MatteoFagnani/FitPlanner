@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SystemModal from "@/components/ui/SystemModal";
 
 export default function ProgramsPage() {
-  const { currentUser, programs, deleteProgram, archiveProgram, restoreProgram } = useStore();
+  const { currentUser, programs, isProgramsHydrated, deleteProgram, archiveProgram, restoreProgram } = useStore();
   const router = useRouter();
   const [showArchived, setShowArchived] = useState(false);
   
@@ -38,6 +38,16 @@ export default function ProgramsPage() {
   }, [currentUser, router]);
 
   if (!currentUser || currentUser.role !== "coach") return null;
+  if (!isProgramsHydrated) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
+          Sincronizzazione in corso
+        </p>
+      </div>
+    );
+  }
 
   const activePrograms = programs.filter(p => !p.status || p.status === 'active');
   const archivedPrograms = programs.filter(p => p.status === 'archived');

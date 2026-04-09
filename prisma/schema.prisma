@@ -14,6 +14,7 @@ model User {
   role             String
   createdAt        DateTime     @default(now())
   oneRMs           OneRM[]
+  programsCoached  Program[]
 }
 
 model OneRM {
@@ -26,4 +27,16 @@ model OneRM {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, exercise])
+}
+
+model Program {
+  id         String   @id
+  title      String
+  status     String   @default("active")
+  coachId    String
+  athleteIds Json
+  weeks      Json
+  createdAt  DateTime
+  updatedAt  DateTime @updatedAt
+  coach      User     @relation(fields: [coachId], references: [id], onDelete: Cascade)
 }
