@@ -1,0 +1,121 @@
+"use client";
+
+import MaterialIcon from "@/components/icons/MaterialIcon";
+import { Week } from "@/lib/types";
+import { useState } from "react";
+
+interface ProgramWeekCarouselProps {
+  weeks: Week[];
+  activeWeekIdx: number;
+  onSelectWeek: (index: number) => void;
+  onAddWeek: () => void;
+  onRemoveWeek: () => void;
+  accentButtonClass: string;
+}
+
+export default function ProgramWeekCarousel({
+  weeks,
+  activeWeekIdx,
+  onSelectWeek,
+  onAddWeek,
+  onRemoveWeek,
+  accentButtonClass,
+}: ProgramWeekCarouselProps) {
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const activeWeek = weeks[activeWeekIdx] ?? weeks[0];
+
+  const goToPreviousWeek = () => {
+    onSelectWeek(Math.max(0, activeWeekIdx - 1));
+  };
+
+  const goToNextWeek = () => {
+    onSelectWeek(Math.min(weeks.length - 1, activeWeekIdx + 1));
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX === null) return;
+
+    const deltaX = event.changedTouches[0]?.clientX - touchStartX;
+    setTouchStartX(null);
+
+    if (deltaX <= -40) {
+      goToNextWeek();
+    }
+
+    if (deltaX >= 40) {
+      goToPreviousWeek();
+    }
+  };
+
+  return (
+    <section className="space-y-4 rounded-[2rem] border border-outline-variant/80 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={goToPreviousWeek}
+          disabled={activeWeekIdx === 0}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="arrow_back_ios_new" className="text-sm" />
+        </button>
+
+        <div className="text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-outline">
+            Settimana Corrente
+          </p>
+          <h3 className="text-xl font-black uppercase italic tracking-tight text-on-surface sm:text-2xl">
+            Week {activeWeek?.order ?? activeWeekIdx + 1}
+          </h3>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
+            {activeWeekIdx + 1} / {weeks.length}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={goToNextWeek}
+          disabled={activeWeekIdx === weeks.length - 1}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="arrow_forward_ios" className="text-sm" />
+        </button>
+      </div>
+
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="rounded-[1.5rem] border border-outline-variant/70 bg-surface-container-lowest px-4 py-3 text-center"
+      >
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-primary">
+          Swipe per cambiare settimana
+        </p>
+        <p className="mt-1 text-xs font-medium text-outline">
+          Aggiungi o rimuovi settimane senza uscire dall&apos;editor.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={onRemoveWeek}
+          disabled={weeks.length <= 1}
+          className="flex h-11 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="remove" />
+        </button>
+        <button
+          type="button"
+          onClick={onAddWeek}
+          className={`col-span-2 flex h-11 items-center justify-center gap-2 rounded-2xl text-white shadow-sm ${accentButtonClass}`}
+        >
+          <MaterialIcon name="calendar_month" className="text-base" />
+          <span className="text-[11px] font-black uppercase tracking-[0.18em]">Aggiungi Settimana</span>
+        </button>
+      </div>
+    </section>
+  );
+}

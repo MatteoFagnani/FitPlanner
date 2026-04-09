@@ -5,10 +5,10 @@ import { useStore } from "@/lib/store/useStore";
 import MaterialIcon from "@/components/icons/MaterialIcon";
 import ProgramAudiencePicker from "@/components/ui/ProgramAudiencePicker";
 import ProgramSessionEditor from "@/components/ui/ProgramSessionEditor";
+import ProgramWeekCarousel from "@/components/ui/ProgramWeekCarousel";
 import { useRouter } from "next/navigation";
 import { Exercise, Program, Week } from "@/lib/types";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 
 function createId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -206,7 +206,7 @@ export default function NewProgramPage() {
   };
 
   return (
-    <div className="relative mx-auto max-w-5xl space-y-6 p-4 pb-40 md:p-6">
+    <div className="relative mx-auto max-w-5xl space-y-6 p-4 pb-32 md:p-6">
       <div className="scanline-overlay" />
 
       {isSyncing && (
@@ -262,84 +262,66 @@ export default function NewProgramPage() {
           />
         </section>
 
-        <section className="sticky top-16 z-30 space-y-4 border-y border-outline-variant bg-background/92 py-4 backdrop-blur-md">
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={removeLastWeek}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-white transition-all hover:bg-error hover:text-white"
-            >
-              <MaterialIcon name="remove" />
-            </button>
+        <ProgramWeekCarousel
+          weeks={weeks}
+          activeWeekIdx={activeWeekIdx}
+          onSelectWeek={setActiveWeekIdx}
+          onAddWeek={addWeek}
+          onRemoveWeek={removeLastWeek}
+          accentButtonClass="bg-primary"
+        />
 
-            <div className="text-center">
-              <span className="text-[10px] font-black uppercase tracking-[0.32em] text-outline">
-                Durata Ciclo
-              </span>
-              <h3 className="text-xl font-black uppercase italic tracking-tight sm:text-3xl">
-                {weeks.length} Settimane
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-outline">
+                Sessioni Settimana
+              </p>
+              <h3 className="text-xl font-black uppercase italic tracking-tight text-on-surface">
+                Week {currentWeek.order}
               </h3>
             </div>
-
-            <button
-              type="button"
-              onClick={addWeek}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-white transition-all hover:bg-primary hover:text-white"
-            >
-              <MaterialIcon name="add" />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex flex-1 flex-wrap gap-2">
-              {weeks.map((week, idx) => (
-                <button
-                  key={week.id}
-                  type="button"
-                  onClick={() => setActiveWeekIdx(idx)}
-                  className={cn(
-                    "rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all sm:px-4 sm:text-[11px]",
-                    activeWeekIdx === idx
-                      ? "border-primary bg-primary text-white shadow-lg"
-                      : "border-outline-variant bg-white text-outline"
-                  )}
-                >
-                  Week {idx + 1}
-                </button>
-              ))}
-            </div>
-
             <button
               type="button"
               onClick={addSessionToActiveWeek}
-              className="flex h-11 w-full items-center justify-center rounded-2xl bg-primary text-white shadow-lg sm:w-11"
+              className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-white shadow-sm"
             >
-              <MaterialIcon name="post_add" />
+              <MaterialIcon name="post_add" className="text-base" />
+              <span className="text-[11px] font-black uppercase tracking-[0.18em]">Nuova Sessione</span>
             </button>
           </div>
-        </section>
 
-        <section className="space-y-4">
-          {currentWeek.sessions.map((session, sessionIdx) => (
-            <motion.div key={session.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-              <ProgramSessionEditor
-                accentColorClass="text-primary"
-                accentSurfaceClass="bg-primary"
-                session={session}
-                sessionIndex={sessionIdx}
-                canDeleteSession={currentWeek.sessions.length > 1}
-                onCloneSession={cloneSession}
-                onAddExercise={addExerciseToSession}
-                onDeleteSession={deleteSession}
-                onUpdateSessionTitle={updateSessionTitle}
-                onRemoveExercise={removeExercise}
-                onUpdateExercise={updateExercise}
-              />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentWeek.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
+              {currentWeek.sessions.map((session, sessionIdx) => (
+                <motion.div key={session.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <ProgramSessionEditor
+                    accentColorClass="text-primary"
+                    accentSurfaceClass="bg-primary"
+                    session={session}
+                    sessionIndex={sessionIdx}
+                    canDeleteSession={currentWeek.sessions.length > 1}
+                    onCloneSession={cloneSession}
+                    onAddExercise={addExerciseToSession}
+                    onDeleteSession={deleteSession}
+                    onUpdateSessionTitle={updateSessionTitle}
+                    onRemoveExercise={removeExercise}
+                    onUpdateExercise={updateExercise}
+                  />
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
+          </AnimatePresence>
         </section>
 
-        <div className="fixed bottom-24 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-4">
+        <div className="fixed bottom-4 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-4">
           <motion.button
             type="submit"
             disabled={isSyncing}

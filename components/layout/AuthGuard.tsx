@@ -40,17 +40,20 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [currentUser?.id, hydrateCurrentUserFromDatabase, hydrateProgramsFromDatabase]);
 
   const isLoginPage = pathname === "/login";
+  const isProgramBuilderPage =
+    pathname === "/programs/new" || pathname.startsWith("/programs/edit/");
+  const hideShell = isLoginPage || isProgramBuilderPage;
 
   if (!isAuthResolved && !isLoginPage) return null;
   if (!currentUser && !isLoginPage) return null;
 
   return (
     <>
-      {!isLoginPage && <TopBar />}
-      <main className={!isLoginPage ? "pb-24 pt-16" : ""}>
+      {!hideShell && <TopBar />}
+      <main className={!hideShell ? "pb-24 pt-16" : ""}>
         {children}
       </main>
-      {!isLoginPage && <BottomNav />}
+      {!hideShell && <BottomNav />}
     </>
   );
 }
