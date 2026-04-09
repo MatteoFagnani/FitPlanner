@@ -151,9 +151,6 @@ export default function ProgramsPage() {
           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
             Protocolli Attivi
           </h3>
-          <span className="text-[9px] font-black text-primary bg-primary/10 px-3 py-1 italic">
-            {activePrograms.length} REGISTRI ATTIVI
-          </span>
         </div>
         
         <div className="space-y-4">
@@ -179,9 +176,6 @@ export default function ProgramsPage() {
                       </p>
                     </div>
                     <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-4">
-                       <p className="text-[9px] text-outline font-bold uppercase tracking-widest">
-                        ID: {prog.id.substring(0, 8)} | VERSIONE 01
-                      </p>
                       <p className="text-[9px] text-outline/60 font-bold uppercase tracking-widest">
                         CREATO: {new Date(prog.createdAt).toLocaleDateString('it-IT')}
                       </p>

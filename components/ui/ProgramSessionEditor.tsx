@@ -142,19 +142,6 @@ export default function ProgramSessionEditor({
                   className="w-full rounded-xl border border-outline-variant/80 bg-white px-3 py-2 text-sm font-bold outline-none"
                 />
               </label>
-
-              <label className="space-y-1 sm:col-span-2">
-                <span className="text-[9px] font-black uppercase tracking-[0.22em] text-outline">
-                  Note
-                </span>
-                <input
-                  type="text"
-                  value={exercise.notes || ""}
-                  onChange={(event) => onUpdateExercise(session.id, exerciseIndex, "notes", event.target.value)}
-                  placeholder="Note utili"
-                  className="w-full rounded-xl border border-outline-variant/80 bg-white px-3 py-2 text-sm font-medium outline-none"
-                />
-              </label>
             </div>
           </div>
         ))}

@@ -29,12 +29,14 @@ export interface Session {
   id: string;
   title: string;
   order: number;
+  completed?: boolean;
   exercises: Exercise[];
 }
 
 export interface Week {
   id: string;
   order: number;
+  completed?: boolean;
   sessions: Session[];
 }
 

@@ -10,7 +10,18 @@ function parseWeeks(value: Prisma.JsonValue | null | undefined): Week[] {
     return [];
   }
 
-  return value as unknown as Week[];
+  return (value as unknown as Week[]).map((week) => {
+    const sessions = (week.sessions ?? []).map((session) => ({
+      ...session,
+      completed: Boolean(session.completed),
+    }));
+
+    return {
+      ...week,
+      sessions,
+      completed: sessions.length > 0 && sessions.every((session) => session.completed),
+    };
+  });
 }
 
 export function serializeProgram(program: {

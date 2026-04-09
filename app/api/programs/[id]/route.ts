@@ -13,9 +13,6 @@ export async function PUT(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (user.role !== "coach") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const { id } = await params;
   const body = (await request.json()) as { program?: Program };
@@ -61,18 +58,69 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = (await request.json()) as { status?: Program["status"] };
-
-  if (!body.status) {
-    return NextResponse.json({ error: "Status is required" }, { status: 400 });
-  }
+  const body = (await request.json()) as {
+    status?: Program["status"];
+    action?: "toggle-session-completion";
+    weekId?: string;
+    sessionId?: string;
+  };
 
   const existingProgram = await prisma.program.findFirst({
-    where: { id, coachId: user.id },
+    where: { id },
   });
 
   if (!existingProgram) {
     return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
+
+  const serializedProgram = serializeProgram(existingProgram);
+  const isCoachOwner = existingProgram.coachId === user.id;
+  const isAssignedAthlete =
+    user.role === "athlete" &&
+    ((serializedProgram.athleteIds && serializedProgram.athleteIds.includes(user.id)) ||
+      serializedProgram.athleteId === user.id);
+
+  if (body.action === "toggle-session-completion") {
+    if (!isCoachOwner && !isAssignedAthlete) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!body.weekId || !body.sessionId) {
+      return NextResponse.json({ error: "Week and session are required" }, { status: 400 });
+    }
+
+    const updatedWeeks = serializedProgram.weeks.map((week) => {
+      if (week.id !== body.weekId) {
+        return week;
+      }
+
+      const sessions = week.sessions.map((session) =>
+        session.id === body.sessionId ? { ...session, completed: !session.completed } : session
+      );
+
+      return {
+        ...week,
+        sessions,
+        completed: sessions.length > 0 && sessions.every((session) => session.completed),
+      };
+    });
+
+    const updatedProgram = await prisma.program.update({
+      where: { id },
+      data: {
+        weeks: updatedWeeks as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return NextResponse.json({ program: serializeProgram(updatedProgram) });
+  }
+
+  if (!isCoachOwner) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!body.status) {
+    return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
   const updatedProgram = await prisma.program.update({

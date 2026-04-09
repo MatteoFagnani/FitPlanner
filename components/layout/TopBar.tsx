@@ -7,14 +7,9 @@ export default function TopBar() {
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
           <MaterialIcon name="precision_manufacturing" className="text-xl" />
         </div>
-        <div className="space-y-0.5">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary glow-blue">
-            FitPlanner
-          </p>
-          <h1 className="text-base font-black uppercase tracking-tight text-on-surface">
-            Kinetic Ledger
-          </h1>
-        </div>
+        <h1 className="text-base font-black uppercase tracking-[0.2em] text-on-surface sm:text-lg">
+          FitPlanner
+        </h1>
       </div>
       <div className="flex items-center">
         <div className="hidden text-right sm:block">

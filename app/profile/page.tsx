@@ -104,11 +104,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-            <p className="text-sm font-medium text-outline">
-              Aggiorna solo i tuoi massimali per mantenere corretti i carichi automatici.
-            </p>
-          </div>
         </div>
       </section>
 

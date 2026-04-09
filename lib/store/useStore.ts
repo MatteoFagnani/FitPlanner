@@ -15,6 +15,7 @@ interface FitPlannerState {
   hydrateCurrentUserFromDatabase: () => Promise<void>;
   hydrateUsersFromDatabase: () => Promise<void>;
   hydrateProgramsFromDatabase: () => Promise<void>;
+  toggleSessionCompletion: (programId: string, weekId: string, sessionId: string) => Promise<boolean>;
   addProgram: (program: Program) => Promise<boolean>;
   updateProgram: (program: Program) => Promise<boolean>;
   deleteProgram: (id: string) => Promise<boolean>;
@@ -281,6 +282,69 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     } catch (error) {
       console.error("Failed to hydrate programs", error);
       set({ isProgramsHydrated: true });
+    }
+  },
+
+  toggleSessionCompletion: async (programId, weekId, sessionId) => {
+    const state = get();
+    const existingProgram = state.programs.find((program) => program.id === programId);
+
+    if (!existingProgram) {
+      return false;
+    }
+
+    const previousPrograms = state.programs;
+    const updatedWeeks = existingProgram.weeks.map((week) => {
+      if (week.id !== weekId) {
+        return week;
+      }
+
+      const sessions = week.sessions.map((session) =>
+        session.id === sessionId ? { ...session, completed: !session.completed } : session
+      );
+
+      return {
+        ...week,
+        sessions,
+        completed: sessions.length > 0 && sessions.every((session) => session.completed),
+      };
+    });
+
+    set({
+      programs: state.programs.map((program) =>
+        program.id === programId ? { ...program, weeks: updatedWeeks } : program
+      ),
+    });
+
+    try {
+      const response = await fetch(`/api/programs/${programId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "toggle-session-completion",
+          weekId,
+          sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle session completion");
+      }
+
+      const data = await response.json();
+      set((currentState) => ({
+        programs: currentState.programs.map((program) =>
+          program.id === data.program.id ? data.program : program
+        ),
+      }));
+
+      return true;
+    } catch (error) {
+      console.error("Failed to toggle session completion", error);
+      set({ programs: previousPrograms });
+      return false;
     }
   },
 

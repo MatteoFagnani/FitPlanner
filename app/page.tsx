@@ -15,9 +15,13 @@ function ProgramWeekViewport({
   activeProgram: Program;
   currentUser: User;
 }) {
+  const { toggleSessionCompletion } = useStore();
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [updatingSessionId, setUpdatingSessionId] = useState<string | null>(null);
   const currentWeek = activeProgram.weeks[currentWeekIndex] ?? activeProgram.weeks[0];
+  const isCurrentWeekCompleted =
+    currentWeek.sessions.length > 0 && currentWeek.sessions.every((session) => session.completed);
 
   const goToPreviousWeek = () => {
     setCurrentWeekIndex((current) => Math.max(0, current - 1));
@@ -46,6 +50,12 @@ function ProgramWeekViewport({
     }
   };
 
+  const handleToggleSessionCompletion = async (sessionId: string) => {
+    setUpdatingSessionId(sessionId);
+    await toggleSessionCompletion(activeProgram.id, currentWeek.id, sessionId);
+    setUpdatingSessionId(null);
+  };
+
   return (
     <div className="space-y-4">
       <div
@@ -70,9 +80,16 @@ function ProgramWeekViewport({
             <h3 className="text-2xl font-black uppercase italic tracking-tight text-on-surface">
               Week {currentWeek.order}
             </h3>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
-              {currentWeekIndex + 1} / {activeProgram.weeks.length}
-            </p>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
+                {currentWeekIndex + 1} / {activeProgram.weeks.length}
+              </p>
+              {isCurrentWeekCompleted && (
+                <span className="rounded-full bg-green-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-white">
+                  Completata
+                </span>
+              )}
+            </div>
           </div>
 
           <button
@@ -97,10 +114,11 @@ function ProgramWeekViewport({
             {currentWeek.sessions.map((session) => (
               <WorkoutSession
                 key={session.id}
-                sessionNumber={session.order}
                 title={session.title}
-                status={currentWeekIndex === 0 && session.order === 1 ? "completed" : "upcoming"}
                 defaultExpanded={session.order === 1}
+                completed={Boolean(session.completed)}
+                isUpdatingCompletion={updatingSessionId === session.id}
+                onToggleCompleted={() => handleToggleSessionCompletion(session.id)}
                 exercises={session.exercises.map((exercise) => {
                   let calculatedLoad = exercise.load;
 
@@ -170,8 +188,15 @@ export default function TrainingPage() {
   }
 
   const totalSessions = activeProgram.weeks.reduce((accumulator, week) => accumulator + week.sessions.length, 0);
-  const completedSessions = 4;
+  const completedSessions = activeProgram.weeks.reduce(
+    (accumulator, week) =>
+      accumulator + week.sessions.filter((session) => session.completed).length,
+    0
+  );
   const totalWeeks = activeProgram.weeks.length;
+  const completedWeeks = activeProgram.weeks.filter(
+    (week) => week.sessions.length > 0 && week.sessions.every((session) => session.completed)
+  ).length;
 
   return (
     <div className="relative mx-auto max-w-4xl space-y-8 p-4 md:p-6">
@@ -204,7 +229,9 @@ export default function TrainingPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-outline">
               Settimane
             </p>
-            <p className="mt-2 text-2xl font-black tracking-tight text-on-surface">{totalWeeks}</p>
+            <p className="mt-2 text-2xl font-black tracking-tight text-on-surface">
+              {completedWeeks}/{totalWeeks}
+            </p>
           </div>
         </div>
       </section>

@@ -29,6 +29,16 @@ function createEmptyExercise(): Exercise {
   };
 }
 
+function cloneSessionWithFreshIds(session: Week["sessions"][number], order: number) {
+  return {
+    ...JSON.parse(JSON.stringify(session)),
+    id: createId("s"),
+    order,
+    completed: false,
+    exercises: session.exercises.map((exercise) => ({ ...exercise, id: createId("ex") })),
+  };
+}
+
 function EditProgramForm({
   currentUserId,
   existingProgram,
@@ -65,11 +75,8 @@ function EditProgramForm({
         ...JSON.parse(JSON.stringify(lastWeek)),
         id: createId("w"),
         order: previousWeeks.length + 1,
-        sessions: lastWeek.sessions.map((session) => ({
-          ...JSON.parse(JSON.stringify(session)),
-          id: createId("s"),
-          exercises: session.exercises.map((exercise) => ({ ...exercise, id: createId("ex") })),
-        })),
+        completed: false,
+        sessions: lastWeek.sessions.map((session, index) => cloneSessionWithFreshIds(session, index + 1)),
       };
 
       return [...previousWeeks, newWeek];
@@ -95,6 +102,7 @@ function EditProgramForm({
           id: createId("s"),
           title: `Sessione ${String.fromCharCode(65 + week.sessions.length)}`,
           order: week.sessions.length + 1,
+          completed: false,
           exercises: [createEmptyExercise()],
         },
       ],
@@ -111,11 +119,8 @@ function EditProgramForm({
         sessions: [
           ...week.sessions,
           {
-            ...JSON.parse(JSON.stringify(sessionToClone)),
-            id: createId("s"),
-            order: week.sessions.length + 1,
+            ...cloneSessionWithFreshIds(sessionToClone, week.sessions.length + 1),
             title: `${sessionToClone.title} (COPIA)`,
-            exercises: sessionToClone.exercises.map((exercise) => ({ ...exercise, id: createId("ex") })),
           },
         ],
       };
@@ -196,7 +201,11 @@ function EditProgramForm({
       title,
       athleteIds: selectedAthleteIds,
       athleteId: undefined,
-      weeks: weeks.map((week, idx) => ({ ...week, order: idx + 1 })),
+      weeks: weeks.map((week, idx) => ({
+        ...week,
+        order: idx + 1,
+        completed: week.sessions.length > 0 && week.sessions.every((session) => session.completed),
+      })),
     };
 
     setIsSyncing(true);
