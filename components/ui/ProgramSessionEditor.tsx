@@ -35,21 +35,16 @@ export default function ProgramSessionEditor({
 }: ProgramSessionEditorProps) {
   return (
     <section className="space-y-4 rounded-[1.75rem] border border-outline-variant/80 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3 self-start sm:self-auto">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-base font-black italic ${accentColorClass}`}
           >
             {String.fromCharCode(65 + sessionIndex)}
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={`text-base font-black uppercase italic tracking-tight sm:text-lg ${accentColorClass}`}>
-              Sessione {String.fromCharCode(65 + sessionIndex)}
-            </h3>
-          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-center gap-2 sm:w-auto">
           <button
             type="button"
             onClick={() => onCloneSession(session.id)}

@@ -72,6 +72,13 @@ export default function NewProgramPage() {
   if (!currentUser || currentUser.role !== "coach") return null;
 
   const currentWeek = weeks[activeWeekIdx];
+  const updateActiveWeek = (updater: (week: Week) => Week) => {
+    setWeeks((previousWeeks) =>
+      previousWeeks.map((week, index) =>
+        index === activeWeekIdx ? updater(week) : week
+      )
+    );
+  };
 
   const addWeek = () => {
     setWeeks((previousWeeks) => {
@@ -101,47 +108,64 @@ export default function NewProgramPage() {
   };
 
   const addSessionToActiveWeek = () => {
-    const newWeeks = [...weeks];
-    newWeeks[activeWeekIdx].sessions.push({
-      id: createId("s"),
-      title: `Sessione ${String.fromCharCode(65 + newWeeks[activeWeekIdx].sessions.length)}`,
-      order: newWeeks[activeWeekIdx].sessions.length + 1,
-      exercises: [createEmptyExercise()],
-    });
-    setWeeks(newWeeks);
+    updateActiveWeek((week) => ({
+      ...week,
+      sessions: [
+        ...week.sessions,
+        {
+          id: createId("s"),
+          title: `Sessione ${String.fromCharCode(65 + week.sessions.length)}`,
+          order: week.sessions.length + 1,
+          exercises: [createEmptyExercise()],
+        },
+      ],
+    }));
   };
 
   const cloneSession = (sessionId: string) => {
-    const newWeeks = [...weeks];
-    const sessionToClone = newWeeks[activeWeekIdx].sessions.find((session) => session.id === sessionId);
-    if (!sessionToClone) return;
+    updateActiveWeek((week) => {
+      const sessionToClone = week.sessions.find((session) => session.id === sessionId);
+      if (!sessionToClone) return week;
 
-    newWeeks[activeWeekIdx].sessions.push({
-      ...JSON.parse(JSON.stringify(sessionToClone)),
-      id: createId("s"),
-      order: newWeeks[activeWeekIdx].sessions.length + 1,
-      title: `${sessionToClone.title} (COPIA)`,
-      exercises: sessionToClone.exercises.map((exercise) => ({ ...exercise, id: createId("ex") })),
+      return {
+        ...week,
+        sessions: [
+          ...week.sessions,
+          {
+            ...JSON.parse(JSON.stringify(sessionToClone)),
+            id: createId("s"),
+            order: week.sessions.length + 1,
+            title: `${sessionToClone.title} (COPIA)`,
+            exercises: sessionToClone.exercises.map((exercise) => ({ ...exercise, id: createId("ex") })),
+          },
+        ],
+      };
     });
-    setWeeks(newWeeks);
   };
 
   const addExerciseToSession = (sessionId: string) => {
-    const newWeeks = [...weeks];
-    const session = newWeeks[activeWeekIdx].sessions.find((item) => item.id === sessionId);
-    if (!session) return;
-
-    session.exercises.push(createEmptyExercise());
-    setWeeks(newWeeks);
+    updateActiveWeek((week) => ({
+      ...week,
+      sessions: week.sessions.map((session) =>
+        session.id === sessionId
+          ? { ...session, exercises: [...session.exercises, createEmptyExercise()] }
+          : session
+      ),
+    }));
   };
 
   const removeExercise = (sessionId: string, exerciseIdx: number) => {
-    const newWeeks = [...weeks];
-    const session = newWeeks[activeWeekIdx].sessions.find((item) => item.id === sessionId);
-    if (!session) return;
-
-    session.exercises.splice(exerciseIdx, 1);
-    setWeeks(newWeeks);
+    updateActiveWeek((week) => ({
+      ...week,
+      sessions: week.sessions.map((session) =>
+        session.id === sessionId
+          ? {
+              ...session,
+              exercises: session.exercises.filter((_, index) => index !== exerciseIdx),
+            }
+          : session
+      ),
+    }));
   };
 
   const updateExercise = (
@@ -150,22 +174,30 @@ export default function NewProgramPage() {
     field: keyof Exercise,
     value: Exercise[keyof Exercise]
   ) => {
-    const newWeeks = [...weeks];
-    const session = newWeeks[activeWeekIdx].sessions.find((item) => item.id === sessionId);
-    if (!session) return;
-
-    session.exercises[exerciseIdx] = { ...session.exercises[exerciseIdx], [field]: value };
-    setWeeks(newWeeks);
+    updateActiveWeek((week) => ({
+      ...week,
+      sessions: week.sessions.map((session) =>
+        session.id === sessionId
+          ? {
+              ...session,
+              exercises: session.exercises.map((exercise, index) =>
+                index === exerciseIdx ? { ...exercise, [field]: value } : exercise
+              ),
+            }
+          : session
+      ),
+    }));
   };
 
   const deleteSession = (sessionId: string) => {
     if (currentWeek.sessions.length <= 1) return;
 
-    const newWeeks = [...weeks];
-    newWeeks[activeWeekIdx].sessions = newWeeks[activeWeekIdx].sessions.filter(
-      (session) => session.id !== sessionId
-    );
-    setWeeks(newWeeks);
+    updateActiveWeek((week) => ({
+      ...week,
+      sessions: week.sessions
+        .filter((session) => session.id !== sessionId)
+        .map((session, index) => ({ ...session, order: index + 1 })),
+    }));
   };
 
   const handleCreate = async (event: React.FormEvent) => {
@@ -263,11 +295,11 @@ export default function NewProgramPage() {
             accentButtonClass="bg-primary"
           />
 
-          <div className="flex justify-end border-t border-outline-variant/70 pt-4">
+          <div className="flex justify-center border-t border-outline-variant/70 pt-4">
             <button
               type="button"
               onClick={addSessionToActiveWeek}
-              className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-white shadow-sm"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-white shadow-sm"
             >
               <MaterialIcon name="post_add" className="text-base" />
               <span className="text-[11px] font-black uppercase tracking-[0.18em]">Nuova Sessione</span>

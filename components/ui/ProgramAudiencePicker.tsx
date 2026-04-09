@@ -43,6 +43,7 @@ export default function ProgramAudiencePicker({
   }, [availableUsers, query]);
 
   const selectedUsers = availableUsers.filter((user) => selectedIds.includes(user.id));
+  const hasQuery = query.trim().length > 0;
 
   const toggleUser = (userId: string) => {
     if (selectedIds.includes(userId)) {
@@ -72,30 +73,16 @@ export default function ProgramAudiencePicker({
           />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {selectedUsers.length === 0 && (
-            <p className="text-xs font-medium text-outline">
-              Nessun utente selezionato.
-            </p>
-          )}
-
-          {selectedUsers.map((user) => (
-            <button
-              key={user.id}
-              type="button"
-              onClick={() => toggleUser(user.id)}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary"
-            >
-              <span className="truncate">{user.name}</span>
-              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-outline">
-                {user.role}
-              </span>
-              <MaterialIcon name="close" className="text-sm" />
-            </button>
-          ))}
+        <div className="mt-3 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest px-3 py-2">
+          <p className="text-[11px] font-medium text-outline">
+            {selectedUsers.length === 0
+              ? "Nessun utente selezionato."
+              : `${selectedUsers.length} utenti selezionati`}
+          </p>
         </div>
 
-        <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+        {hasQuery && (
+          <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
           {filteredUsers.map((user) => {
             const isSelected = selectedIds.includes(user.id);
 
@@ -133,7 +120,8 @@ export default function ProgramAudiencePicker({
               </button>
             );
           })}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
