@@ -10,9 +10,9 @@ interface ProgramSessionEditorProps {
   sessionIndex: number;
   canDeleteSession: boolean;
   onCloneSession: (sessionId: string) => void;
-  onAddExercise: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
-  onRemoveExercise: (sessionId: string, exerciseIndex: number) => void;
+  onAddExercise: (sessionId: string) => void;
+  onRemoveLastExercise: (sessionId: string) => void;
   onUpdateExercise: (
     sessionId: string,
     exerciseIndex: number,
@@ -28,9 +28,9 @@ export default function ProgramSessionEditor({
   sessionIndex,
   canDeleteSession,
   onCloneSession,
-  onAddExercise,
   onDeleteSession,
-  onRemoveExercise,
+  onAddExercise,
+  onRemoveLastExercise,
   onUpdateExercise,
 }: ProgramSessionEditorProps) {
   return (
@@ -156,27 +156,28 @@ export default function ProgramSessionEditor({
                 />
               </label>
             </div>
-
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => onRemoveExercise(session.id, exerciseIndex)}
-                className="inline-flex items-center gap-2 rounded-xl border border-error/20 bg-error/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-error"
-              >
-                <MaterialIcon name="delete_outline" className="text-sm" />
-                Rimuovi
-              </button>
-              <button
-                type="button"
-                onClick={() => onAddExercise(session.id)}
-                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-sm ${accentSurfaceClass}`}
-              >
-                <MaterialIcon name="add" className="text-sm" />
-                Aggiungi
-              </button>
-            </div>
           </div>
         ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border-t border-outline-variant/70 pt-4">
+        <button
+          type="button"
+          onClick={() => onRemoveLastExercise(session.id)}
+          disabled={session.exercises.length <= 1}
+          className="inline-flex items-center gap-2 rounded-xl border border-error/20 bg-error/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-error disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="delete_outline" className="text-sm" />
+          Rimuovi Esercizio
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddExercise(session.id)}
+          className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-sm ${accentSurfaceClass}`}
+        >
+          <MaterialIcon name="add" className="text-sm" />
+          Aggiungi Esercizio
+        </button>
       </div>
     </section>
   );

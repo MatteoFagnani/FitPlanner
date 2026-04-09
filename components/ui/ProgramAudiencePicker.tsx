@@ -62,14 +62,14 @@ export default function ProgramAudiencePicker({
       </label>
 
       <div className="rounded-[1.5rem] border border-outline-variant/80 bg-white p-3 shadow-sm">
-        <div className="flex items-center gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-3 py-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-outline-variant/70 bg-white px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
           <MaterialIcon name="search" className="text-base text-outline" />
           <input
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Cerca coach o atleta"
-            className="w-full min-w-0 bg-transparent text-sm font-medium outline-none placeholder:text-outline/50"
+            className="w-full min-w-0 border-0 bg-transparent text-sm font-medium text-on-surface shadow-none outline-none ring-0 placeholder:text-outline/50 focus:outline-none focus:ring-0"
           />
         </div>
 
@@ -83,43 +83,43 @@ export default function ProgramAudiencePicker({
 
         {hasQuery && (
           <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
-          {filteredUsers.map((user) => {
-            const isSelected = selectedIds.includes(user.id);
+            {filteredUsers.map((user) => {
+              const isSelected = selectedIds.includes(user.id);
 
-            return (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => toggleUser(user.id)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition-all",
-                  isSelected
-                    ? "border-primary/30 bg-primary/5"
-                    : "border-outline-variant/70 bg-surface-container-lowest"
-                )}
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-bold text-on-surface">{user.name}</p>
-                    <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-outline">
-                      {user.role}
-                    </span>
-                  </div>
-                  <p className="truncate text-[11px] text-outline">{user.email}</p>
-                </div>
-                <div
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => toggleUser(user.id)}
                   className={cn(
-                    "ml-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                    "flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition-all",
                     isSelected
-                      ? "border-primary bg-primary text-white"
-                      : "border-outline-variant text-outline"
+                      ? "border-primary/30 bg-primary/5"
+                      : "border-outline-variant/70 bg-surface-container-lowest"
                   )}
                 >
-                  <MaterialIcon name={isSelected ? "done" : "add"} className="text-sm" />
-                </div>
-              </button>
-            );
-          })}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-bold text-on-surface">{user.name}</p>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-outline">
+                        {user.role}
+                      </span>
+                    </div>
+                    <p className="truncate text-[11px] text-outline">{user.email}</p>
+                  </div>
+                  <div
+                    className={cn(
+                      "ml-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                      isSelected
+                        ? "border-primary bg-primary text-white"
+                        : "border-outline-variant text-outline"
+                    )}
+                  >
+                    <MaterialIcon name={isSelected ? "done" : "add"} className="text-sm" />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

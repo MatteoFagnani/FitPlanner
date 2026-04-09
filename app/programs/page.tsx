@@ -90,23 +90,13 @@ export default function ProgramsPage() {
       />
 
       <div className="space-y-4">
-        <motion.div 
-          initial={{ opacity: 0, x: -10 }} 
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-2 text-primary"
-        >
-          <MaterialIcon name="admin_panel_settings" filled />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-            Dashboard Coach
-          </span>
-        </motion.div>
         <motion.h2 
           initial={{ opacity: 0, x: -10 }} 
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
           className="text-2xl font-extrabold tracking-tighter uppercase italic leading-none sm:text-4xl"
         >
-          Gestione
+          Dashboard
         </motion.h2>
         <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
           <div className="rounded-2xl border border-outline-variant/80 bg-white p-4 shadow-sm">
@@ -129,7 +119,7 @@ export default function ProgramsPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid gap-4 md:max-w-md">
         {[
           { 
             label: "Nuovo Programma", 
@@ -138,13 +128,6 @@ export default function ProgramsPage() {
             color: "text-blue-600", 
             href: "/programs/new",
             type: "link"
-          },
-          { 
-            label: "Atleti Attivi", 
-            desc: `${activePrograms.length} protocolli sincronizzati`, 
-            icon: "groups", 
-            color: "text-secondary",
-            type: "stat"
           }
         ].map((item, idx) => (
           <motion.div
@@ -153,22 +136,11 @@ export default function ProgramsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + idx * 0.1 }}
           >
-            {item.type === "link" ? (
-              <Link href={item.href!} className="group block h-full rounded-[1.75rem] border border-outline-variant/80 bg-surface-container-lowest p-6 shadow-sm transition-all hover:border-primary/30 hover:bg-surface-container-low hover:shadow-md">
-                <MaterialIcon name={item.icon} className={cn("text-3xl mb-3 transition-transform group-hover:scale-110", item.color)} />
-                <h3 className="text-xl font-black uppercase italic tracking-tighter">{item.label}</h3>
-                <p className="text-[10px] text-outline mt-1 font-bold uppercase tracking-widest">{item.desc}</p>
-              </Link>
-            ) : (
-              <div className="relative h-full overflow-hidden rounded-[1.75rem] border border-outline-variant/80 bg-surface-container-lowest p-6 shadow-sm">
-                <MaterialIcon name={item.icon} className={cn("text-3xl mb-3", item.color)} />
-                <h3 className="text-xl font-black uppercase italic tracking-tighter">{item.label}</h3>
-                <p className="text-[10px] text-outline mt-1 font-bold uppercase tracking-widest">{item.desc}</p>
-                <div className="absolute top-0 right-0 p-4 opacity-5">
-                   <MaterialIcon name={item.icon} className="text-6xl" />
-                </div>
-              </div>
-            )}
+            <Link href={item.href!} className="group block h-full rounded-[1.75rem] border border-outline-variant/80 bg-surface-container-lowest p-6 shadow-sm transition-all hover:border-primary/30 hover:bg-surface-container-low hover:shadow-md">
+              <MaterialIcon name={item.icon} className={cn("mb-3 text-3xl transition-transform group-hover:scale-110", item.color)} />
+              <h3 className="text-xl font-black uppercase italic tracking-tighter">{item.label}</h3>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-outline">{item.desc}</p>
+            </Link>
           </motion.div>
         ))}
       </div>

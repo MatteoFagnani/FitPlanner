@@ -74,7 +74,6 @@ function EditProgramForm({
 
       return [...previousWeeks, newWeek];
     });
-    setActiveWeekIdx(weeks.length);
   };
 
   const removeLastWeek = () => {
@@ -134,14 +133,17 @@ function EditProgramForm({
     }));
   };
 
-  const removeExercise = (sessionId: string, exerciseIdx: number) => {
+  const removeLastExerciseFromSession = (sessionId: string) => {
     updateActiveWeek((week) => ({
       ...week,
       sessions: week.sessions.map((session) =>
         session.id === sessionId
           ? {
               ...session,
-              exercises: session.exercises.filter((_, index) => index !== exerciseIdx),
+              exercises:
+                session.exercises.length > 1
+                  ? session.exercises.slice(0, -1)
+                  : session.exercises,
             }
           : session
       ),
@@ -307,7 +309,7 @@ function EditProgramForm({
                     onCloneSession={cloneSession}
                     onAddExercise={addExerciseToSession}
                     onDeleteSession={deleteSession}
-                    onRemoveExercise={removeExercise}
+                    onRemoveLastExercise={removeLastExerciseFromSession}
                     onUpdateExercise={updateExercise}
                   />
                 </motion.div>

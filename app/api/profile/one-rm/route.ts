@@ -45,3 +45,36 @@ export async function POST(request: NextRequest) {
     })),
   });
 }
+
+export async function DELETE(request: NextRequest) {
+  const body = await request.json();
+  const exercise = body?.exercise;
+
+  if (!exercise || typeof exercise !== "string") {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  await prisma.oneRM.deleteMany({
+    where: {
+      userId: user.id,
+      exercise,
+    },
+  });
+
+  const oneRMs = await prisma.oneRM.findMany({
+    where: { userId: user.id },
+    orderBy: { exercise: "asc" },
+  });
+
+  return NextResponse.json({
+    oneRMs: oneRMs.map((oneRM) => ({
+      exercise: oneRM.exercise,
+      value: oneRM.value,
+    })),
+  });
+}

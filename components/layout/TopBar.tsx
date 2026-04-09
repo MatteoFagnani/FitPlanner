@@ -16,7 +16,7 @@ export default function TopBar() {
           </h1>
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center">
         <div className="hidden text-right sm:block">
           <p className="text-[9px] font-black uppercase tracking-[0.22em] text-outline">
             Training System
@@ -24,13 +24,6 @@ export default function TopBar() {
           <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-outline/60">
             v2.4.0 stable
           </p>
-        </div>
-        <div className="h-8 w-px bg-outline-variant/70" />
-        <div className="flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1.5">
-          <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.45)]" />
-          <span className="text-[9px] font-black uppercase tracking-[0.22em] text-green-700">
-            Online
-          </span>
         </div>
       </div>
     </header>

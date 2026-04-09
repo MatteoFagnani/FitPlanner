@@ -11,6 +11,7 @@ interface FitPlannerState {
   login: (identity: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   setUserOneRM: (exercise: string, value: number) => Promise<boolean>;
+  removeUserOneRM: (exercise: string) => Promise<boolean>;
   hydrateCurrentUserFromDatabase: () => Promise<void>;
   hydrateUsersFromDatabase: () => Promise<void>;
   hydrateProgramsFromDatabase: () => Promise<void>;
@@ -166,6 +167,49 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       return true;
     } catch (error) {
       console.error("Failed to save oneRM", error);
+      return false;
+    }
+  },
+
+  removeUserOneRM: async (exercise) => {
+    const state = get();
+    if (!state.currentUser) return false;
+
+    const previousCurrentUser = state.currentUser;
+    set({
+      currentUser: {
+        ...previousCurrentUser,
+        oneRMs: previousCurrentUser.oneRMs.filter((rm) => rm.exercise !== exercise),
+      },
+    });
+
+    try {
+      const response = await fetch("/api/profile/one-rm", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ exercise }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete oneRM");
+      }
+
+      const data = await response.json();
+      set((currentState) => ({
+        currentUser: currentState.currentUser
+          ? {
+              ...currentState.currentUser,
+              oneRMs: data.oneRMs,
+            }
+          : null,
+      }));
+
+      return true;
+    } catch (error) {
+      console.error("Failed to delete oneRM", error);
+      set({ currentUser: previousCurrentUser });
       return false;
     }
   },

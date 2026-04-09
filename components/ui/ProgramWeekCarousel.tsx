@@ -54,15 +54,23 @@ export default function ProgramWeekCarousel({
   return (
     <div className="space-y-4">
       <div
-        className="flex items-center justify-between gap-3"
+        className="flex items-center justify-between gap-2"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         <button
           type="button"
+          onClick={goToPreviousWeek}
+          disabled={activeWeekIdx === 0}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <MaterialIcon name="arrow_back_ios_new" className="text-sm" />
+        </button>
+        <button
+          type="button"
           onClick={onRemoveWeek}
           disabled={weeks.length <= 1}
-          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
         >
           <MaterialIcon name="remove" />
         </button>
@@ -79,20 +87,9 @@ export default function ProgramWeekCarousel({
         <button
           type="button"
           onClick={onAddWeek}
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm ${accentButtonClass}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-sm ${accentButtonClass}`}
         >
           <MaterialIcon name="add" />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={goToPreviousWeek}
-          disabled={activeWeekIdx === 0}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-outline disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <MaterialIcon name="arrow_back_ios_new" className="text-sm" />
         </button>
         <button
           type="button"
