@@ -135,10 +135,6 @@ export default function TrainingPage() {
       )
     : undefined;
 
-  useEffect(() => {
-    setCurrentWeekIndex(0);
-  }, [activeProgram?.id]);
-
   if (!currentUser) return null;
 
   if (!isProgramsHydrated) {
