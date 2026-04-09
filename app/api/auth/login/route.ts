@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many login attempts" }, { status: 429 });
   }
 
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: {
-      OR: [{ email: identity }, { name: identity }],
+      name: identity,
     },
     include: {
       oneRMs: {

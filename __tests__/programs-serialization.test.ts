@@ -5,11 +5,11 @@ describe("serializeProgram", () => {
   test("normalizes week completion from session completion", () => {
     const now = new Date("2026-04-09T12:00:00.000Z");
     const serialized = serializeProgram({
-      id: "prog-1",
+      id: 1,
       title: "Programma",
       status: "active",
-      coachId: "coach-1",
-      athleteIds: ["athlete-1"],
+      coachId: 1,
+      athleteIds: [2],
       weeks: [
         {
           id: "w-1",
@@ -31,10 +31,10 @@ describe("serializeProgram", () => {
   test("falls back to empty athleteIds when json is invalid", () => {
     const now = new Date("2026-04-09T12:00:00.000Z");
     const serialized = serializeProgram({
-      id: "prog-2",
+      id: 2,
       title: "Programma",
       status: "active",
-      coachId: "coach-1",
+      coachId: 1,
       athleteIds: { bad: true },
       weeks: [],
       createdAt: now,

@@ -3,6 +3,8 @@ import { z } from "zod";
 
 const safeNumber = z.number().finite();
 const nonEmptyString = z.string().trim().min(1);
+const positiveInt = z.number().int().positive();
+const nonNegativeInt = z.number().int().nonnegative();
 
 export const loginSchema = z.object({
   identity: nonEmptyString.max(120),
@@ -45,12 +47,12 @@ const weekSchema = z.object({
 });
 
 export const programSchema = z.object({
-  id: nonEmptyString.max(120),
+  id: nonNegativeInt,
   title: nonEmptyString.max(160),
   status: z.enum(["active", "archived"]).optional(),
-  coachId: nonEmptyString.max(120),
-  athleteId: z.string().trim().min(1).max(120).optional(),
-  athleteIds: z.array(z.string().trim().min(1).max(120)).max(200).optional(),
+  coachId: positiveInt,
+  athleteId: positiveInt.optional(),
+  athleteIds: z.array(positiveInt).max(200).optional(),
   weeks: z.array(weekSchema).min(1).max(52),
   createdAt: z.string().datetime(),
 });

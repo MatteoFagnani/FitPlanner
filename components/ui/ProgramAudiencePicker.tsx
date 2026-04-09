@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 
 interface ProgramAudiencePickerProps {
   users: User[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  selectedIds: number[];
+  onChange: (ids: number[]) => void;
 }
 
 export default function ProgramAudiencePicker({
@@ -38,14 +38,14 @@ export default function ProgramAudiencePicker({
     }
 
     return availableUsers.filter((user) =>
-      `${user.name} ${user.email}`.toLowerCase().includes(normalizedQuery)
+      `${user.name} ${user.role}`.toLowerCase().includes(normalizedQuery)
     );
   }, [availableUsers, query]);
 
   const selectedUsers = availableUsers.filter((user) => selectedIds.includes(user.id));
   const hasQuery = query.trim().length > 0;
 
-  const toggleUser = (userId: string) => {
+  const toggleUser = (userId: number) => {
     if (selectedIds.includes(userId)) {
       onChange(selectedIds.filter((id) => id !== userId));
       return;
@@ -105,7 +105,6 @@ export default function ProgramAudiencePicker({
                         {user.role}
                       </span>
                     </div>
-                    <p className="truncate text-[11px] text-outline">{user.email}</p>
                   </div>
                   <div
                     className={cn(

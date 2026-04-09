@@ -12,6 +12,11 @@ import { assertSameOrigin } from "@/lib/server/request-security";
 import { canCoachManageProgram, canUserToggleProgramSession } from "@/lib/server/program-access";
 import { toProgramUpdateInput } from "@/lib/server/program-write";
 
+function parseProgramId(value: string) {
+  const programId = Number(value);
+  return Number.isInteger(programId) && programId > 0 ? programId : null;
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -29,7 +34,11 @@ export async function PUT(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = parseProgramId(rawId);
+  if (id === null) {
+    return NextResponse.json({ error: "Invalid program id" }, { status: 400 });
+  }
   const parsedBody = await parseJsonBody(request, updateProgramRequestSchema);
   if (!parsedBody.success) {
     return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
@@ -82,7 +91,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = parseProgramId(rawId);
+  if (id === null) {
+    return NextResponse.json({ error: "Invalid program id" }, { status: 400 });
+  }
   const rawBody = await parseJsonBody(
     request,
     toggleSessionCompletionSchema.or(programStatusPatchSchema)
@@ -103,7 +116,7 @@ export async function PATCH(
   const serializedProgram = serializeProgram(existingProgram);
   const isCoachOwner = canCoachManageProgram(serializedProgram, user);
 
-  if (body.action === "toggle-session-completion") {
+  if ("action" in body && body.action === "toggle-session-completion") {
     if (!canUserToggleProgramSession(serializedProgram, user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -158,7 +171,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!body.status) {
+  if (!("status" in body) || !body.status) {
     return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
@@ -205,7 +218,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = parseProgramId(rawId);
+  if (id === null) {
+    return NextResponse.json({ error: "Invalid program id" }, { status: 400 });
+  }
 
   const existingProgram = await prisma.program.findFirst({
     where: { id, coachId: user.id },

@@ -17,9 +17,8 @@ enum ProgramStatus {
 }
 
 model User {
-  id               String       @id @default(cuid())
-  name             String
-  email            String       @unique
+  id               Int          @id @default(autoincrement())
+  name             String       @unique
   password         String
   role             UserRole
   createdAt        DateTime     @default(now())
@@ -29,22 +28,22 @@ model User {
 }
 
 model OneRM {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   exercise  String
   value     Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  userId    String
+  userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, exercise])
 }
 
 model Program {
-  id         String   @id
+  id         Int      @id @default(autoincrement())
   title      String
   status     ProgramStatus   @default(active)
-  coachId    String
+  coachId    Int
   athleteIds Json
   weeks      Json
   createdAt  DateTime
@@ -53,11 +52,11 @@ model Program {
 }
 
 model Session {
-  id         String   @id @default(cuid())
+  id         Int      @id @default(autoincrement())
   tokenHash  String   @unique
   expiresAt  DateTime
   createdAt  DateTime @default(now())
-  userId     String
+  userId     Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])

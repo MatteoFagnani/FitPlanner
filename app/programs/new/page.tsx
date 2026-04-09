@@ -14,7 +14,6 @@ import {
   addSessionToWeek,
   addWeekToProgram,
   cloneSessionInWeek,
-  createId,
   createInitialWeeks,
   deleteSessionFromWeek,
   normalizeWeeks,
@@ -27,7 +26,7 @@ export default function NewProgramPage() {
   const { currentUser, users, hydrateUsersFromDatabase, addProgram } = useStore();
   const router = useRouter();
   const [title, setTitle] = useState("Nuovo Ciclo di Allenamento");
-  const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>([]);
+  const [selectedAthleteIds, setSelectedAthleteIds] = useState<number[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [weeks, setWeeks] = useState<Week[]>(() => createInitialWeeks());
   const [activeWeekIdx, setActiveWeekIdx] = useState(0);
@@ -99,7 +98,7 @@ export default function NewProgramPage() {
     }
 
     const newProgram: Program = {
-      id: createId("prog"),
+      id: 0,
       title,
       coachId: currentUser.id,
       athleteIds: selectedAthleteIds,

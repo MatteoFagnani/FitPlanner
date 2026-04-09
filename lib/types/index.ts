@@ -6,9 +6,8 @@ export interface UserOneRM {
 }
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
-  email: string;
   password?: string;
   role: UserRole;
   oneRMs: UserOneRM[];
@@ -41,12 +40,12 @@ export interface Week {
 }
 
 export interface Program {
-  id: string;
+  id: number;
   title: string;
   status?: 'active' | 'archived';
-  coachId: string;
-  athleteId?: string;
-  athleteIds?: string[];
+  coachId: number;
+  athleteId?: number;
+  athleteIds?: number[];
   weeks: Week[];
   createdAt: string;
   updatedAt?: string;

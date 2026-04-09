@@ -1,0 +1,39 @@
+ALTER TABLE "OneRM" DROP CONSTRAINT "OneRM_pkey";
+ALTER TABLE "Program" DROP CONSTRAINT "Program_pkey";
+ALTER TABLE "Session" DROP CONSTRAINT "Session_pkey";
+
+ALTER TABLE "OneRM"
+  ADD COLUMN "newId" SERIAL;
+
+ALTER TABLE "Program"
+  ADD COLUMN "newId" SERIAL;
+
+ALTER TABLE "Session"
+  ADD COLUMN "newId" SERIAL;
+
+ALTER TABLE "OneRM"
+  DROP COLUMN "id";
+
+ALTER TABLE "OneRM"
+  RENAME COLUMN "newId" TO "id";
+
+ALTER TABLE "OneRM"
+  ADD CONSTRAINT "OneRM_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE "Program"
+  DROP COLUMN "id";
+
+ALTER TABLE "Program"
+  RENAME COLUMN "newId" TO "id";
+
+ALTER TABLE "Program"
+  ADD CONSTRAINT "Program_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE "Session"
+  DROP COLUMN "id";
+
+ALTER TABLE "Session"
+  RENAME COLUMN "newId" TO "id";
+
+ALTER TABLE "Session"
+  ADD CONSTRAINT "Session_pkey" PRIMARY KEY ("id");

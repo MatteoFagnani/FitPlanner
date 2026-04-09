@@ -45,12 +45,12 @@ interface FitPlannerState {
   hydrateCurrentUserFromDatabase: () => Promise<void>;
   hydrateUsersFromDatabase: () => Promise<void>;
   hydrateProgramsFromDatabase: () => Promise<void>;
-  toggleSessionCompletion: (programId: string, weekId: string, sessionId: string) => Promise<boolean>;
+  toggleSessionCompletion: (programId: number, weekId: string, sessionId: string) => Promise<boolean>;
   addProgram: (program: Program) => Promise<boolean>;
   updateProgram: (program: Program) => Promise<boolean>;
-  deleteProgram: (id: string) => Promise<boolean>;
-  archiveProgram: (id: string) => Promise<boolean>;
-  restoreProgram: (id: string) => Promise<boolean>;
+  deleteProgram: (id: number) => Promise<boolean>;
+  archiveProgram: (id: number) => Promise<boolean>;
+  restoreProgram: (id: number) => Promise<boolean>;
 }
 
 export const useStore = create<FitPlannerState>()((set, get) => ({

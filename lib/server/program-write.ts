@@ -2,9 +2,8 @@ import { Prisma } from "@prisma/client";
 import { Program } from "@/lib/types";
 import { createProgramAthleteIds } from "@/lib/program-editor";
 
-export function toProgramCreateInput(program: Program, coachId: string): Prisma.ProgramCreateInput {
+export function toProgramCreateInput(program: Program, coachId: number): Prisma.ProgramUncheckedCreateInput {
   return {
-    id: program.id,
     title: program.title,
     status: program.status ?? "active",
     coachId,
@@ -14,7 +13,7 @@ export function toProgramCreateInput(program: Program, coachId: string): Prisma.
   };
 }
 
-export function toProgramUpdateInput(program: Program, coachId: string): Prisma.ProgramUpdateManyMutationInput {
+export function toProgramUpdateInput(program: Program, coachId: number): Prisma.ProgramUncheckedUpdateInput {
   return {
     title: program.title,
     status: program.status ?? "active",

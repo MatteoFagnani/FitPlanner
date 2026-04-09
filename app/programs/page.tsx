@@ -52,7 +52,7 @@ export default function ProgramsPage() {
   const activePrograms = programs.filter(p => !p.status || p.status === 'active');
   const archivedPrograms = programs.filter(p => p.status === 'archived');
 
-  const confirmDelete = (id: string) => {
+  const confirmDelete = (id: number) => {
     setModalConfig({
       isOpen: true,
       type: "danger",
@@ -63,7 +63,7 @@ export default function ProgramsPage() {
     });
   };
 
-  const confirmArchive = (id: string) => {
+  const confirmArchive = (id: number) => {
     setModalConfig({
       isOpen: true,
       type: "info",

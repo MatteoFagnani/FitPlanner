@@ -27,14 +27,14 @@ function EditProgramForm({
   users,
   onUpdateProgram,
 }: {
-  currentUserId: string;
+  currentUserId: number;
   existingProgram: Program;
   users: ReturnType<typeof useStore.getState>["users"];
   onUpdateProgram: (program: Program) => Promise<boolean>;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(existingProgram.title);
-  const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>(
+  const [selectedAthleteIds, setSelectedAthleteIds] = useState<number[]>(
     existingProgram.athleteIds || (existingProgram.athleteId ? [existingProgram.athleteId] : [])
   );
   const [isSyncing, setIsSyncing] = useState(false);
@@ -266,7 +266,7 @@ export default function EditProgramPage() {
   }, [hydrateProgramsFromDatabase, hydrateUsersFromDatabase]);
 
   const existingProgram = useMemo(
-    () => programs.find((program) => program.id === id),
+    () => programs.find((program) => program.id === Number(id)),
     [id, programs]
   );
 

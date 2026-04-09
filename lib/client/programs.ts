@@ -53,13 +53,13 @@ export function updateProgramRequest(program: Program) {
   });
 }
 
-export function deleteProgramRequest(id: string) {
+export function deleteProgramRequest(id: number) {
   return requestJson<{ success: true }>(`/api/programs/${id}`, {
     method: "DELETE",
   });
 }
 
-export function patchProgramStatusRequest(id: string, status: NonNullable<Program["status"]>, expectedUpdatedAt: string) {
+export function patchProgramStatusRequest(id: number, status: NonNullable<Program["status"]>, expectedUpdatedAt: string) {
   return requestJson<ProgramResponse>(`/api/programs/${id}`, {
     method: "PATCH",
     headers: {
@@ -70,7 +70,7 @@ export function patchProgramStatusRequest(id: string, status: NonNullable<Progra
 }
 
 export function toggleProgramSessionCompletionRequest(
-  programId: string,
+  programId: number,
   weekId: string,
   sessionId: string,
   expectedUpdatedAt: string

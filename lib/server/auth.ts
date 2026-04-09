@@ -9,16 +9,14 @@ const SESSION_REFRESH_WINDOW_MS = 1000 * 60 * 60 * 24 * 7;
 const MAX_SESSIONS_PER_USER = 5;
 
 export function serializeUser(user: {
-  id: string;
+  id: number;
   name: string;
-  email: string;
   role: string;
   oneRMs: Array<{ exercise: string; value: number }>;
 }) {
   return {
     id: user.id,
     name: user.name,
-    email: user.email,
     role: user.role,
     oneRMs: user.oneRMs.map((oneRM) => ({
       exercise: oneRM.exercise,
@@ -39,7 +37,7 @@ function isBcryptHash(value: string) {
   return /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
-export async function verifyPassword(userId: string, storedPassword: string, candidatePassword: string) {
+export async function verifyPassword(userId: number, storedPassword: string, candidatePassword: string) {
   if (isBcryptHash(storedPassword)) {
     return bcrypt.compare(candidatePassword, storedPassword);
   }
@@ -57,7 +55,7 @@ export async function verifyPassword(userId: string, storedPassword: string, can
   return true;
 }
 
-export async function createUserSession(userId: string) {
+export async function createUserSession(userId: number) {
   const token = createSessionToken();
   const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
