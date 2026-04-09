@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 
 const SESSION_COOKIE_NAME = "fitplanner_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30;
+const SESSION_REFRESH_WINDOW_MS = 1000 * 60 * 60 * 24 * 7;
 const MAX_SESSIONS_PER_USER = 5;
 
 export function serializeUser(user: {
@@ -63,7 +64,8 @@ export async function createUserSession(userId: string) {
 
   await prisma.session.deleteMany({
     where: {
-      OR: [{ userId, expiresAt: { lte: new Date() } }],
+      userId,
+      expiresAt: { lte: new Date() },
     },
   });
 
@@ -155,22 +157,26 @@ export async function getAuthenticatedUser() {
     return null;
   }
 
-  const refreshedExpiry = new Date(Date.now() + SESSION_DURATION_MS);
+  const shouldRefresh = session.expiresAt.getTime() - Date.now() <= SESSION_REFRESH_WINDOW_MS;
 
-  await prisma.session.update({
-    where: { id: session.id },
-    data: {
-      expiresAt: refreshedExpiry,
-    },
-  });
+  if (shouldRefresh) {
+    const refreshedExpiry = new Date(Date.now() + SESSION_DURATION_MS);
 
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    expires: refreshedExpiry,
-    path: "/",
-  });
+    await prisma.session.update({
+      where: { id: session.id },
+      data: {
+        expiresAt: refreshedExpiry,
+      },
+    });
+
+    cookieStore.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      expires: refreshedExpiry,
+      path: "/",
+    });
+  }
 
   return session.user;
 }

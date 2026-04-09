@@ -12,8 +12,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthResolved = useStore((state) => state.isAuthResolved);
   const currentUser = useStore((state) => state.currentUser);
   const initializeSession = useStore((state) => state.initializeSession);
-  const hydrateCurrentUserFromDatabase = useStore((state) => state.hydrateCurrentUserFromDatabase);
-  const hydrateProgramsFromDatabase = useStore((state) => state.hydrateProgramsFromDatabase);
 
   useEffect(() => {
     void initializeSession();
@@ -31,13 +29,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       router.push("/");
     }
   }, [currentUser, isAuthResolved, pathname, router]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-
-    void hydrateCurrentUserFromDatabase();
-    void hydrateProgramsFromDatabase();
-  }, [currentUser?.id, hydrateCurrentUserFromDatabase, hydrateProgramsFromDatabase]);
 
   const isLoginPage = pathname === "/login";
   const isProgramBuilderPage =

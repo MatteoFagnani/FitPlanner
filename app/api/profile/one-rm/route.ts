@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/server/auth";
+import { oneRMDeleteSchema, oneRMSchema, parseJsonBody } from "@/lib/server/validation";
+import { assertSameOrigin } from "@/lib/server/request-security";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const exercise = body?.exercise;
-  const value = body?.value;
-
-  if (!exercise || typeof value !== "number") {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  const originCheck = assertSameOrigin(request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
   }
+
+  const parsedBody = await parseJsonBody(request, oneRMSchema);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
+  }
+  const { exercise, value } = parsedBody.data;
 
   const user = await getAuthenticatedUser();
   if (!user) {
@@ -47,12 +52,16 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const body = await request.json();
-  const exercise = body?.exercise;
-
-  if (!exercise || typeof exercise !== "string") {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  const originCheck = assertSameOrigin(request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
   }
+
+  const parsedBody = await parseJsonBody(request, oneRMDeleteSchema);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
+  }
+  const { exercise } = parsedBody.data;
 
   const user = await getAuthenticatedUser();
   if (!user) {

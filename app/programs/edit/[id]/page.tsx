@@ -9,35 +9,17 @@ import ProgramWeekCarousel from "@/components/ui/ProgramWeekCarousel";
 import { useRouter, useParams } from "next/navigation";
 import { Exercise, Program, Week } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function createEmptyExercise(): Exercise {
-  return {
-    id: createId("ex"),
-    name: "",
-    sets: 3,
-    reps: 10,
-    method: "",
-    notes: "",
-  };
-}
-
-function cloneSessionWithFreshIds(session: Week["sessions"][number], order: number) {
-  return {
-    ...JSON.parse(JSON.stringify(session)),
-    id: createId("s"),
-    order,
-    completed: false,
-    exercises: session.exercises.map((exercise) => ({ ...exercise, id: createId("ex") })),
-  };
-}
+import {
+  addExerciseToWeekSession,
+  addSessionToWeek,
+  addWeekToProgram,
+  cloneSessionInWeek,
+  deleteSessionFromWeek,
+  normalizeWeeks,
+  removeLastExerciseFromWeekSession,
+  removeLastWeekFromProgram,
+  updateExerciseInWeekSession,
+} from "@/lib/program-editor";
 
 function EditProgramForm({
   currentUserId,
@@ -69,24 +51,12 @@ function EditProgramForm({
   };
 
   const addWeek = () => {
-    setWeeks((previousWeeks) => {
-      const lastWeek = previousWeeks[previousWeeks.length - 1];
-      const newWeek: Week = {
-        ...JSON.parse(JSON.stringify(lastWeek)),
-        id: createId("w"),
-        order: previousWeeks.length + 1,
-        completed: false,
-        sessions: lastWeek.sessions.map((session, index) => cloneSessionWithFreshIds(session, index + 1)),
-      };
-
-      return [...previousWeeks, newWeek];
-    });
+    setWeeks((previousWeeks) => addWeekToProgram(previousWeeks));
   };
 
   const removeLastWeek = () => {
-    if (weeks.length <= 1) return;
-
-    const newWeeks = weeks.slice(0, -1);
+    const newWeeks = removeLastWeekFromProgram(weeks);
+    if (newWeeks.length === weeks.length) return;
     setWeeks(newWeeks);
     if (activeWeekIdx >= newWeeks.length) {
       setActiveWeekIdx(newWeeks.length - 1);
@@ -94,65 +64,19 @@ function EditProgramForm({
   };
 
   const addSessionToActiveWeek = () => {
-    updateActiveWeek((week) => ({
-      ...week,
-      sessions: [
-        ...week.sessions,
-        {
-          id: createId("s"),
-          title: `Sessione ${String.fromCharCode(65 + week.sessions.length)}`,
-          order: week.sessions.length + 1,
-          completed: false,
-          exercises: [createEmptyExercise()],
-        },
-      ],
-    }));
+    updateActiveWeek((week) => addSessionToWeek(week));
   };
 
   const cloneSession = (sessionId: string) => {
-    updateActiveWeek((week) => {
-      const sessionToClone = week.sessions.find((session) => session.id === sessionId);
-      if (!sessionToClone) return week;
-
-      return {
-        ...week,
-        sessions: [
-          ...week.sessions,
-          {
-            ...cloneSessionWithFreshIds(sessionToClone, week.sessions.length + 1),
-            title: `${sessionToClone.title} (COPIA)`,
-          },
-        ],
-      };
-    });
+    updateActiveWeek((week) => cloneSessionInWeek(week, sessionId));
   };
 
   const addExerciseToSession = (sessionId: string) => {
-    updateActiveWeek((week) => ({
-      ...week,
-      sessions: week.sessions.map((session) =>
-        session.id === sessionId
-          ? { ...session, exercises: [...session.exercises, createEmptyExercise()] }
-          : session
-      ),
-    }));
+    updateActiveWeek((week) => addExerciseToWeekSession(week, sessionId));
   };
 
   const removeLastExerciseFromSession = (sessionId: string) => {
-    updateActiveWeek((week) => ({
-      ...week,
-      sessions: week.sessions.map((session) =>
-        session.id === sessionId
-          ? {
-              ...session,
-              exercises:
-                session.exercises.length > 1
-                  ? session.exercises.slice(0, -1)
-                  : session.exercises,
-            }
-          : session
-      ),
-    }));
+    updateActiveWeek((week) => removeLastExerciseFromWeekSession(week, sessionId));
   };
 
   const updateExercise = (
@@ -161,30 +85,15 @@ function EditProgramForm({
     field: keyof Exercise,
     value: Exercise[keyof Exercise]
   ) => {
-    updateActiveWeek((week) => ({
-      ...week,
-      sessions: week.sessions.map((session) =>
-        session.id === sessionId
-          ? {
-              ...session,
-              exercises: session.exercises.map((exercise, index) =>
-                index === exerciseIdx ? { ...exercise, [field]: value } : exercise
-              ),
-            }
-          : session
-      ),
-    }));
+    updateActiveWeek((week) =>
+      updateExerciseInWeekSession(week, sessionId, exerciseIdx, field, value)
+    );
   };
 
   const deleteSession = (sessionId: string) => {
     if (currentWeek.sessions.length <= 1) return;
 
-    updateActiveWeek((week) => ({
-      ...week,
-      sessions: week.sessions
-        .filter((session) => session.id !== sessionId)
-        .map((session, index) => ({ ...session, order: index + 1 })),
-    }));
+    updateActiveWeek((week) => deleteSessionFromWeek(week, sessionId));
   };
 
   const handleUpdate = async (event: React.FormEvent) => {
@@ -201,11 +110,7 @@ function EditProgramForm({
       title,
       athleteIds: selectedAthleteIds,
       athleteId: undefined,
-      weeks: weeks.map((week, idx) => ({
-        ...week,
-        order: idx + 1,
-        completed: week.sessions.length > 0 && week.sessions.every((session) => session.completed),
-      })),
+      weeks: normalizeWeeks(weeks),
     };
 
     setIsSyncing(true);

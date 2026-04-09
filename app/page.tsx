@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store/useStore";
 import { calculateLoad } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { isAssignedToProgram } from "@/lib/server/program-access";
 
 function ProgramWeekViewport({
   activeProgram,
@@ -84,6 +85,8 @@ function ProgramWeekViewport({
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
                 {currentWeekIndex + 1} / {activeProgram.weeks.length}
               </p>
+            </div>
+             <div className="mt-1 flex items-center justify-center gap-2">
               {isCurrentWeekCompleted && (
                 <span className="rounded-full bg-green-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-white">
                   Completata
@@ -150,8 +153,7 @@ export default function TrainingPage() {
     ? programs.find(
         (program) =>
           (!program.status || program.status === "active") &&
-          ((program.athleteIds && program.athleteIds.includes(currentUser.id)) ||
-            program.athleteId === currentUser.id)
+          isAssignedToProgram(program, currentUser.id)
       )
     : undefined;
 

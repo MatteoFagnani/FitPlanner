@@ -1,26 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Program } from "@/lib/types";
 import { serializeProgram } from "@/lib/server/programs";
-import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server/auth";
+import {
+  parseJsonBody,
+  programStatusPatchSchema,
+  toggleSessionCompletionSchema,
+  updateProgramRequestSchema,
+} from "@/lib/server/validation";
+import { assertSameOrigin } from "@/lib/server/request-security";
+import { canCoachManageProgram, canUserToggleProgramSession } from "@/lib/server/program-access";
+import { toProgramUpdateInput } from "@/lib/server/program-write";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const originCheck = assertSameOrigin(request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
+  }
+
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (user.role !== "coach") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
-  const body = (await request.json()) as { program?: Program };
-  const program = body.program;
-
-  if (!program) {
-    return NextResponse.json({ error: "Program is required" }, { status: 400 });
+  const parsedBody = await parseJsonBody(request, updateProgramRequestSchema);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
   }
+  const { program } = parsedBody.data;
 
   const existingProgram = await prisma.program.findFirst({
     where: { id, coachId: user.id },
@@ -30,17 +44,26 @@ export async function PUT(
     return NextResponse.json({ error: "Program not found" }, { status: 404 });
   }
 
-  const updatedProgram = await prisma.program.update({
-    where: { id },
-    data: {
-      title: program.title,
-      status: program.status ?? "active",
-      coachId: user.id,
-      athleteIds: (program.athleteIds ?? (program.athleteId ? [program.athleteId] : [])) as unknown as Prisma.InputJsonValue,
-      weeks: program.weeks as unknown as Prisma.InputJsonValue,
-      createdAt: new Date(program.createdAt),
+  if (existingProgram.updatedAt.toISOString() !== program.updatedAt) {
+    return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+  }
+
+  const updateResult = await prisma.program.updateMany({
+    where: {
+      id,
+      updatedAt: existingProgram.updatedAt,
     },
+    data: toProgramUpdateInput(program, user.id),
   });
+
+  if (updateResult.count === 0) {
+    return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+  }
+
+  const updatedProgram = await prisma.program.findUnique({ where: { id } });
+  if (!updatedProgram) {
+    return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ program: serializeProgram(updatedProgram) });
 }
@@ -49,18 +72,25 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const originCheck = assertSameOrigin(request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
+  }
+
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const body = (await request.json()) as {
-    status?: Program["status"];
-    action?: "toggle-session-completion";
-    weekId?: string;
-    sessionId?: string;
-  };
+  const rawBody = await parseJsonBody(
+    request,
+    toggleSessionCompletionSchema.or(programStatusPatchSchema)
+  );
+  if (!rawBody.success) {
+    return NextResponse.json({ error: rawBody.error }, { status: rawBody.status });
+  }
+  const body = rawBody.data;
 
   const existingProgram = await prisma.program.findFirst({
     where: { id },
@@ -71,19 +101,19 @@ export async function PATCH(
   }
 
   const serializedProgram = serializeProgram(existingProgram);
-  const isCoachOwner = existingProgram.coachId === user.id;
-  const isAssignedAthlete =
-    user.role === "athlete" &&
-    ((serializedProgram.athleteIds && serializedProgram.athleteIds.includes(user.id)) ||
-      serializedProgram.athleteId === user.id);
+  const isCoachOwner = canCoachManageProgram(serializedProgram, user);
 
   if (body.action === "toggle-session-completion") {
-    if (!isCoachOwner && !isAssignedAthlete) {
+    if (!canUserToggleProgramSession(serializedProgram, user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (!body.weekId || !body.sessionId) {
       return NextResponse.json({ error: "Week and session are required" }, { status: 400 });
+    }
+
+    if (existingProgram.updatedAt.toISOString() !== body.expectedUpdatedAt) {
+      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
     }
 
     const updatedWeeks = serializedProgram.weeks.map((week) => {
@@ -102,12 +132,24 @@ export async function PATCH(
       };
     });
 
-    const updatedProgram = await prisma.program.update({
-      where: { id },
+    const updateResult = await prisma.program.updateMany({
+      where: {
+        id,
+        updatedAt: existingProgram.updatedAt,
+      },
       data: {
-        weeks: updatedWeeks as unknown as Prisma.InputJsonValue,
+        weeks: updatedWeeks as unknown as import("@prisma/client").Prisma.InputJsonValue,
       },
     });
+
+    if (updateResult.count === 0) {
+      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+    }
+
+    const updatedProgram = await prisma.program.findUnique({ where: { id } });
+    if (!updatedProgram) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ program: serializeProgram(updatedProgram) });
   }
@@ -120,12 +162,28 @@ export async function PATCH(
     return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
-  const updatedProgram = await prisma.program.update({
-    where: { id },
+  if (existingProgram.updatedAt.toISOString() !== body.expectedUpdatedAt) {
+    return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+  }
+
+  const updateResult = await prisma.program.updateMany({
+    where: {
+      id,
+      updatedAt: existingProgram.updatedAt,
+    },
     data: {
       status: body.status,
     },
   });
+
+  if (updateResult.count === 0) {
+    return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+  }
+
+  const updatedProgram = await prisma.program.findUnique({ where: { id } });
+  if (!updatedProgram) {
+    return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ program: serializeProgram(updatedProgram) });
 }
@@ -134,6 +192,11 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const originCheck = assertSameOrigin(_request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
+  }
+
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

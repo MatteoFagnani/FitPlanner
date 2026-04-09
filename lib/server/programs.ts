@@ -32,6 +32,7 @@ export function serializeProgram(program: {
   athleteIds: Prisma.JsonValue;
   weeks: Prisma.JsonValue;
   createdAt: Date;
+  updatedAt: Date;
 }): Program {
   return {
     id: program.id,
@@ -41,5 +42,6 @@ export function serializeProgram(program: {
     athleteIds: isStringArray(program.athleteIds) ? program.athleteIds : [],
     weeks: parseWeeks(program.weeks),
     createdAt: program.createdAt.toISOString(),
+    updatedAt: program.updatedAt.toISOString(),
   };
 }

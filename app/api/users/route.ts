@@ -15,10 +15,11 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     orderBy: { name: "asc" },
-    include: {
-      oneRMs: {
-        orderBy: { exercise: "asc" },
-      },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
     },
   });
 
@@ -28,10 +29,7 @@ export async function GET() {
       name: user.name,
       email: user.email,
       role: user.role,
-      oneRMs: user.oneRMs.map((oneRM) => ({
-        exercise: oneRM.exercise,
-        value: oneRM.value,
-      })),
+      oneRMs: [],
     })),
   });
 }

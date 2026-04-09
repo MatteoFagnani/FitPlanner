@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createUserSession, serializeUser, verifyPassword } from "@/lib/server/auth";
+import { loginSchema, parseJsonBody } from "@/lib/server/validation";
+import { assertSameOrigin } from "@/lib/server/request-security";
+import { clearRateLimit, consumeRateLimit } from "@/lib/server/rate-limit";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const identity = body?.identity?.trim();
-  const password = body?.password;
+  const originCheck = assertSameOrigin(request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
+  }
 
-  if (!identity || !password) {
-    return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
+  const parsedBody = await parseJsonBody(request, loginSchema);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
+  }
+  const identity = parsedBody.data.identity.trim();
+  const password = parsedBody.data.password;
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rateLimitKey = `${clientIp}:${identity.toLowerCase()}`;
+  const rateLimit = consumeRateLimit(rateLimitKey);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many login attempts" }, { status: 429 });
   }
 
   const user = await prisma.user.findFirst({
@@ -33,6 +47,7 @@ export async function POST(request: NextRequest) {
   }
 
   await createUserSession(user.id);
+  clearRateLimit(rateLimitKey);
 
   return NextResponse.json({
     user: serializeUser(user),

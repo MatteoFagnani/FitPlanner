@@ -49,4 +49,5 @@ export interface Program {
   athleteIds?: string[];
   weeks: Week[];
   createdAt: string;
+  updatedAt?: string;
 }

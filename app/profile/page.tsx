@@ -17,10 +17,10 @@ export default function ProfilePage() {
   const [isRemovingExercise, setIsRemovingExercise] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentUser) {
-      hydrateCurrentUserFromDatabase();
+    if (currentUser?.id) {
+      void hydrateCurrentUserFromDatabase();
     }
-  }, [currentUser, hydrateCurrentUserFromDatabase]);
+  }, [currentUser?.id, hydrateCurrentUserFromDatabase]);
 
   if (!currentUser) return null;
 

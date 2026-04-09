@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Program } from "@/lib/types";
 import { serializeProgram } from "@/lib/server/programs";
-import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server/auth";
+import { createProgramRequestSchema, parseJsonBody } from "@/lib/server/validation";
+import { assertSameOrigin } from "@/lib/server/request-security";
+import { isAssignedToProgram } from "@/lib/server/program-access";
+import { toProgramCreateInput } from "@/lib/server/program-write";
 
 export async function GET() {
   const user = await getAuthenticatedUser();
@@ -24,7 +26,7 @@ export async function GET() {
 
       return (
         (!program.status || program.status === "active") &&
-        ((program.athleteIds && program.athleteIds.includes(user.id)) || program.athleteId === user.id)
+        isAssignedToProgram(program, user.id)
       );
     });
 
@@ -32,6 +34,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const originCheck = assertSameOrigin(request);
+  if (!originCheck.ok) {
+    return NextResponse.json({ error: originCheck.error }, { status: originCheck.status });
+  }
+
   const user = await getAuthenticatedUser();
 
   if (!user) {
@@ -42,23 +49,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = (await request.json()) as { program?: Program };
-  const program = body.program;
-
-  if (!program) {
-    return NextResponse.json({ error: "Program is required" }, { status: 400 });
+  const parsedBody = await parseJsonBody(request, createProgramRequestSchema);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
   }
+  const { program } = parsedBody.data;
 
   const createdProgram = await prisma.program.create({
-    data: {
-      id: program.id,
-      title: program.title,
-      status: program.status ?? "active",
-      coachId: user.id,
-      athleteIds: (program.athleteIds ?? (program.athleteId ? [program.athleteId] : [])) as unknown as Prisma.InputJsonValue,
-      weeks: program.weeks as unknown as Prisma.InputJsonValue,
-      createdAt: new Date(program.createdAt),
-    },
+    data: toProgramCreateInput(program, user.id),
   });
 
   return NextResponse.json({ program: serializeProgram(createdProgram) }, { status: 201 });

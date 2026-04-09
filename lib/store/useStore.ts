@@ -1,6 +1,24 @@
 import { create } from "zustand";
 import { Program, User } from "../types";
 
+function replaceProgram(programs: Program[], nextProgram: Program) {
+  return programs.map((program) => (program.id === nextProgram.id ? nextProgram : program));
+}
+
+function upsertProgram(programs: Program[], nextProgram: Program) {
+  return [nextProgram, ...programs.filter((program) => program.id !== nextProgram.id)];
+}
+
+function clearSessionState(set: (partial: Partial<FitPlannerState>) => void) {
+  set({
+    currentUser: null,
+    programs: [],
+    users: [],
+    isProgramsHydrated: true,
+    isAuthResolved: true,
+  });
+}
+
 interface FitPlannerState {
   isAuthResolved: boolean;
   currentUser: User | null;
@@ -44,13 +62,20 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
-        set({
-          currentUser: null,
-          programs: [],
-          isProgramsHydrated: true,
-          isAuthResolved: true,
-          users: [],
-        });
+        if (response.status === 401) {
+          set({
+            currentUser: null,
+            programs: [],
+            isProgramsHydrated: true,
+            isAuthResolved: true,
+            users: [],
+          });
+        } else {
+          set({
+            isProgramsHydrated: true,
+            isAuthResolved: true,
+          });
+        }
         return;
       }
 
@@ -126,6 +151,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     const state = get();
     if (!state.currentUser) return false;
 
+    const previousCurrentUser = state.currentUser;
     const existingIndex = state.currentUser.oneRMs.findIndex((rm) => rm.exercise === exercise);
     const newOneRMs = [...state.currentUser.oneRMs];
 
@@ -168,6 +194,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       return true;
     } catch (error) {
       console.error("Failed to save oneRM", error);
+      set({ currentUser: previousCurrentUser });
       return false;
     }
   },
@@ -225,6 +252,10 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          set({ currentUser: null });
+          return;
+        }
         throw new Error("Failed to hydrate user");
       }
 
@@ -247,6 +278,10 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          set({ currentUser: null, users: [] });
+          return;
+        }
         throw new Error("Failed to hydrate users");
       }
 
@@ -274,6 +309,10 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          set({ currentUser: null, programs: [], isProgramsHydrated: true });
+          return;
+        }
         throw new Error("Failed to hydrate programs");
       }
 
@@ -289,7 +328,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     const state = get();
     const existingProgram = state.programs.find((program) => program.id === programId);
 
-    if (!existingProgram) {
+    if (!existingProgram || !existingProgram.updatedAt) {
       return false;
     }
 
@@ -326,10 +365,15 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
           action: "toggle-session-completion",
           weekId,
           sessionId,
+          expectedUpdatedAt: existingProgram.updatedAt,
         }),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          clearSessionState(set);
+          return false;
+        }
         throw new Error("Failed to toggle session completion");
       }
 
@@ -344,6 +388,7 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     } catch (error) {
       console.error("Failed to toggle session completion", error);
       set({ programs: previousPrograms });
+      await get().hydrateProgramsFromDatabase();
       return false;
     }
   },
@@ -361,13 +406,17 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          clearSessionState(set);
+          return false;
+        }
         throw new Error("Failed to create program");
       }
 
       const data = await response.json();
       set((state) => ({
         isProgramsHydrated: true,
-        programs: [data.program, ...state.programs.filter((item) => item.id !== data.program.id)],
+        programs: upsertProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
@@ -387,13 +436,21 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          clearSessionState(set);
+          return false;
+        }
+        if (response.status === 409) {
+          await get().hydrateProgramsFromDatabase();
+          return false;
+        }
         throw new Error("Failed to update program");
       }
 
       const data = await response.json();
       set((state) => ({
         isProgramsHydrated: true,
-        programs: state.programs.map((item) => (item.id === data.program.id ? data.program : item)),
+        programs: replaceProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
@@ -409,6 +466,10 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          clearSessionState(set);
+          return false;
+        }
         throw new Error("Failed to delete program");
       }
 
@@ -424,23 +485,36 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
   },
 
   archiveProgram: async (id) => {
+    const existingProgram = get().programs.find((program) => program.id === id);
+    if (!existingProgram?.updatedAt) {
+      return false;
+    }
+
     try {
       const response = await fetch(`/api/programs/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "archived" }),
+        body: JSON.stringify({ status: "archived", expectedUpdatedAt: existingProgram.updatedAt }),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          clearSessionState(set);
+          return false;
+        }
+        if (response.status === 409) {
+          await get().hydrateProgramsFromDatabase();
+          return false;
+        }
         throw new Error("Failed to archive program");
       }
 
       const data = await response.json();
       set((state) => ({
         isProgramsHydrated: true,
-        programs: state.programs.map((program) => (program.id === data.program.id ? data.program : program)),
+        programs: replaceProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
@@ -450,23 +524,36 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
   },
 
   restoreProgram: async (id) => {
+    const existingProgram = get().programs.find((program) => program.id === id);
+    if (!existingProgram?.updatedAt) {
+      return false;
+    }
+
     try {
       const response = await fetch(`/api/programs/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "active" }),
+        body: JSON.stringify({ status: "active", expectedUpdatedAt: existingProgram.updatedAt }),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          clearSessionState(set);
+          return false;
+        }
+        if (response.status === 409) {
+          await get().hydrateProgramsFromDatabase();
+          return false;
+        }
         throw new Error("Failed to restore program");
       }
 
       const data = await response.json();
       set((state) => ({
         isProgramsHydrated: true,
-        programs: state.programs.map((program) => (program.id === data.program.id ? data.program : program)),
+        programs: replaceProgram(state.programs, data.program),
       }));
       return true;
     } catch (error) {
