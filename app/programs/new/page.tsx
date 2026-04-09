@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export default function NewProgramPage() {
-  const { currentUser, users, addProgram } = useStore();
+  const { currentUser, users, hydrateUsersFromDatabase, addProgram } = useStore();
   const router = useRouter();
   
   const [title, setTitle] = useState("Nuovo Ciclo di Allenamento");
@@ -32,6 +32,10 @@ export default function NewProgramPage() {
   ]);
 
   const [activeWeekIdx, setActiveWeekIdx] = useState(0);
+
+  useEffect(() => {
+    hydrateUsersFromDatabase();
+  }, [hydrateUsersFromDatabase]);
 
   if (!currentUser || currentUser.role !== "coach") return null;
 

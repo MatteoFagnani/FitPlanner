@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store/useStore";
 import MaterialIcon from "@/components/icons/MaterialIcon";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const { currentUser, setUserOneRM, logout } = useStore();
+  const { currentUser, setUserOneRM, hydrateCurrentUserFromDatabase, logout } = useStore();
   const router = useRouter();
   const [editingExercise, setEditingExercise] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      hydrateCurrentUserFromDatabase();
+    }
+  }, [currentUser, hydrateCurrentUserFromDatabase]);
 
   if (!currentUser) return null;
 
@@ -18,12 +25,17 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
-  const handleSaveMax = (e: React.FormEvent) => {
+  const handleSaveMax = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingExercise && editValue) {
-      setUserOneRM(editingExercise, parseFloat(editValue));
-      setEditingExercise(null);
-      setEditValue("");
+      setIsSaving(true);
+      const success = await setUserOneRM(editingExercise, parseFloat(editValue));
+      setIsSaving(false);
+
+      if (success) {
+        setEditingExercise(null);
+        setEditValue("");
+      }
     }
   };
 
@@ -108,7 +120,7 @@ export default function ProfilePage() {
                       onChange={(e) => setEditValue(e.target.value)}
                       className="w-full rounded-xl border border-primary bg-surface-container px-3 py-2 text-2xl font-black tabular-nums focus:outline-none glow-sm"
                     />
-                    <button type="submit" className="rounded-xl bg-primary px-3 text-white shadow-lg">
+                    <button type="submit" disabled={isSaving} className="rounded-xl bg-primary px-3 text-white shadow-lg disabled:opacity-60">
                       <MaterialIcon name="done" className="text-sm" />
                     </button>
                   </form>

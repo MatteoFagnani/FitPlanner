@@ -12,11 +12,11 @@ export default function LoginPage() {
   const login = useStore((state) => state.login);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identity || !password) return;
     
-    const success = login(identity, password);
+    const success = await login(identity, password);
     if (success) {
       router.push("/");
     } else {

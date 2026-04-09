@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 export default function EditProgramPage() {
   const { id } = useParams();
-  const { currentUser, users, programs, updateProgram } = useStore();
+  const { currentUser, users, programs, hydrateUsersFromDatabase, updateProgram } = useStore();
   const router = useRouter();
   
   const [title, setTitle] = useState("");
@@ -20,6 +20,10 @@ export default function EditProgramPage() {
   
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [activeWeekIdx, setActiveWeekIdx] = useState(0);
+
+  useEffect(() => {
+    hydrateUsersFromDatabase();
+  }, [hydrateUsersFromDatabase]);
 
   useEffect(() => {
     const program = programs.find(p => p.id === id);
