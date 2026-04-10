@@ -12,6 +12,8 @@ interface WorkoutSessionProps {
   completed?: boolean;
   isUpdatingCompletion?: boolean;
   onToggleCompleted?: () => void;
+  updatingExerciseId?: string | null;
+  onSaveExerciseLoad?: (exerciseId: string, value: number | null) => Promise<void> | void;
 }
 
 export default function WorkoutSession({
@@ -21,6 +23,8 @@ export default function WorkoutSession({
   completed = false,
   isUpdatingCompletion = false,
   onToggleCompleted,
+  updatingExerciseId = null,
+  onSaveExerciseLoad,
 }: WorkoutSessionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -83,7 +87,16 @@ export default function WorkoutSession({
         <div className="mt-4 space-y-2">
           <div className="space-y-2">
             {exercises.map((exercise) => (
-              <ExerciseRow key={exercise.id} exercise={exercise} />
+              <ExerciseRow
+                key={exercise.id}
+                exercise={exercise}
+                isSavingLoad={updatingExerciseId === exercise.id}
+                onSaveLoad={
+                  onSaveExerciseLoad
+                    ? (value) => onSaveExerciseLoad(exercise.id, value)
+                    : undefined
+                }
+              />
             ))}
           </div>
         </div>

@@ -1,4 +1,5 @@
 export type UserRole = "coach" | "athlete";
+export type PercentageReference = "oneRM" | "topSet";
 
 export interface UserOneRM {
   exercise: string;
@@ -21,7 +22,9 @@ export interface Exercise {
   method?: string;
   notes?: string;
   percentage?: number;
+  percentageReference?: PercentageReference;
   load?: number;
+  performedLoad?: number;
 }
 
 export interface Session {

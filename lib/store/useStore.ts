@@ -10,6 +10,7 @@ import {
   fetchUsers,
   patchProgramStatusRequest,
   toggleProgramSessionCompletionRequest,
+  updateExerciseLoadRequest,
   updateProgramRequest,
 } from "@/lib/client/programs";
 
@@ -46,6 +47,13 @@ interface FitPlannerState {
   hydrateUsersFromDatabase: () => Promise<void>;
   hydrateProgramsFromDatabase: () => Promise<void>;
   toggleSessionCompletion: (programId: number, weekId: string, sessionId: string) => Promise<boolean>;
+  updateExerciseLoad: (
+    programId: number,
+    weekId: string,
+    sessionId: string,
+    exerciseId: string,
+    performedLoad: number | null
+  ) => Promise<boolean>;
   addProgram: (program: Program) => Promise<boolean>;
   updateProgram: (program: Program) => Promise<boolean>;
   deleteProgram: (id: number) => Promise<boolean>;
@@ -296,6 +304,72 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
         return false;
       }
       console.error("Failed to toggle session completion", error);
+      set({ programs: previousPrograms });
+      await get().hydrateProgramsFromDatabase();
+      return false;
+    }
+  },
+
+  updateExerciseLoad: async (programId, weekId, sessionId, exerciseId, performedLoad) => {
+    const state = get();
+    const existingProgram = state.programs.find((program) => program.id === programId);
+
+    if (!existingProgram || !existingProgram.updatedAt) {
+      return false;
+    }
+
+    const previousPrograms = state.programs;
+    const updatedWeeks = existingProgram.weeks.map((week) => {
+      if (week.id !== weekId) {
+        return week;
+      }
+
+      return {
+        ...week,
+        sessions: week.sessions.map((session) => {
+          if (session.id !== sessionId) {
+            return session;
+          }
+
+          return {
+            ...session,
+            exercises: session.exercises.map((exercise) =>
+              exercise.id === exerciseId ? { ...exercise, performedLoad: performedLoad ?? undefined } : exercise
+            ),
+          };
+        }),
+      };
+    });
+
+    set({
+      programs: state.programs.map((program) =>
+        program.id === programId ? { ...program, weeks: updatedWeeks } : program
+      ),
+    });
+
+    try {
+      const data = await updateExerciseLoadRequest(
+        programId,
+        weekId,
+        sessionId,
+        exerciseId,
+        performedLoad,
+        existingProgram.updatedAt
+      );
+
+      set((currentState) => ({
+        programs: currentState.programs.map((program) =>
+          program.id === data.program.id ? data.program : program
+        ),
+      }));
+
+      return true;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSessionState(set);
+        return false;
+      }
+      console.error("Failed to update exercise load", error);
       set({ programs: previousPrograms });
       await get().hydrateProgramsFromDatabase();
       return false;

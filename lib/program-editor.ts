@@ -23,6 +23,7 @@ export function createEmptyExercise(): Exercise {
     sets: 3,
     reps: 10,
     method: "",
+    percentageReference: "oneRM",
     notes: "",
   };
 }
@@ -59,6 +60,7 @@ export function createInitialWeeks(): Week[] {
               reps: 10,
               method: "RPE 8",
               percentage: 70,
+              percentageReference: "oneRM",
               notes: "",
             },
           ],

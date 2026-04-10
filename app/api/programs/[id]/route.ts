@@ -6,6 +6,7 @@ import {
   parseJsonBody,
   programStatusPatchSchema,
   toggleSessionCompletionSchema,
+  updateExerciseLoadSchema,
   updateProgramRequestSchema,
 } from "@/lib/server/validation";
 import { assertSameOrigin } from "@/lib/server/request-security";
@@ -98,7 +99,7 @@ export async function PATCH(
   }
   const rawBody = await parseJsonBody(
     request,
-    toggleSessionCompletionSchema.or(programStatusPatchSchema)
+    toggleSessionCompletionSchema.or(updateExerciseLoadSchema).or(programStatusPatchSchema)
   );
   if (!rawBody.success) {
     return NextResponse.json({ error: rawBody.error }, { status: rawBody.status });
@@ -142,6 +143,64 @@ export async function PATCH(
         ...week,
         sessions,
         completed: sessions.length > 0 && sessions.every((session) => session.completed),
+      };
+    });
+
+    const updateResult = await prisma.program.updateMany({
+      where: {
+        id,
+        updatedAt: existingProgram.updatedAt,
+      },
+      data: {
+        weeks: updatedWeeks as unknown as import("@prisma/client").Prisma.InputJsonValue,
+      },
+    });
+
+    if (updateResult.count === 0) {
+      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+    }
+
+    const updatedProgram = await prisma.program.findUnique({ where: { id } });
+    if (!updatedProgram) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ program: serializeProgram(updatedProgram) });
+  }
+
+  if ("action" in body && body.action === "update-exercise-load") {
+    if (!canUserToggleProgramSession(serializedProgram, user)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (existingProgram.updatedAt.toISOString() !== body.expectedUpdatedAt) {
+      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+    }
+
+    const updatedWeeks = serializedProgram.weeks.map((week) => {
+      if (week.id !== body.weekId) {
+        return week;
+      }
+
+      return {
+        ...week,
+        sessions: week.sessions.map((session) => {
+          if (session.id !== body.sessionId) {
+            return session;
+          }
+
+          return {
+            ...session,
+            exercises: session.exercises.map((exercise) =>
+              exercise.id === body.exerciseId
+                ? {
+                    ...exercise,
+                    performedLoad: body.performedLoad ?? undefined,
+                  }
+                : exercise
+            ),
+          };
+        }),
       };
     });
 

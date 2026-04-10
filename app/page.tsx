@@ -4,10 +4,10 @@ import MaterialIcon from "@/components/icons/MaterialIcon";
 import WorkoutSession from "@/components/ui/WorkoutSession";
 import { Program, User } from "@/lib/types";
 import { useStore } from "@/lib/store/useStore";
-import { calculateLoad } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { isAssignedToProgram } from "@/lib/server/program-access";
+import { getCalculatedExerciseLoad } from "@/lib/training-loads";
 
 function ProgramWeekViewport({
   activeProgram,
@@ -16,10 +16,11 @@ function ProgramWeekViewport({
   activeProgram: Program;
   currentUser: User;
 }) {
-  const { toggleSessionCompletion } = useStore();
+  const { toggleSessionCompletion, updateExerciseLoad } = useStore();
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [updatingSessionId, setUpdatingSessionId] = useState<string | null>(null);
+  const [updatingExerciseId, setUpdatingExerciseId] = useState<string | null>(null);
   const currentWeek = activeProgram.weeks[currentWeekIndex] ?? activeProgram.weeks[0];
   const isCurrentWeekCompleted =
     currentWeek.sessions.length > 0 && currentWeek.sessions.every((session) => session.completed);
@@ -55,6 +56,16 @@ function ProgramWeekViewport({
     setUpdatingSessionId(sessionId);
     await toggleSessionCompletion(activeProgram.id, currentWeek.id, sessionId);
     setUpdatingSessionId(null);
+  };
+
+  const handleSaveExerciseLoad = async (
+    sessionId: string,
+    exerciseId: string,
+    value: number | null
+  ) => {
+    setUpdatingExerciseId(exerciseId);
+    await updateExerciseLoad(activeProgram.id, currentWeek.id, sessionId, exerciseId, value);
+    setUpdatingExerciseId(null);
   };
 
   return (
@@ -121,20 +132,21 @@ function ProgramWeekViewport({
                 defaultExpanded={session.order === 1}
                 completed={Boolean(session.completed)}
                 isUpdatingCompletion={updatingSessionId === session.id}
+                updatingExerciseId={updatingExerciseId}
                 onToggleCompleted={() => handleToggleSessionCompletion(session.id)}
+                onSaveExerciseLoad={(exerciseId, value) =>
+                  handleSaveExerciseLoad(session.id, exerciseId, value)
+                }
                 exercises={session.exercises.map((exercise) => {
-                  let calculatedLoad = exercise.load;
-
-                  if (exercise.percentage) {
-                    const userRM = currentUser.oneRMs.find((rm) => rm.exercise === exercise.name)?.value;
-                    if (userRM) {
-                      calculatedLoad = calculateLoad(exercise.percentage, userRM);
-                    }
-                  }
-
                   return {
                     ...exercise,
-                    load: calculatedLoad || 0,
+                    load: getCalculatedExerciseLoad(
+                      exercise,
+                      currentUser,
+                      activeProgram,
+                      currentWeek.order,
+                      session.order
+                    ),
                   };
                 })}
               />

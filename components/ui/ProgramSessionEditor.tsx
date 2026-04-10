@@ -125,7 +125,7 @@ export default function ProgramSessionEditor({
 
               <label className="space-y-1">
                 <span className="text-[9px] font-black uppercase tracking-[0.22em] text-outline">
-                  % 1RM
+                  Percentuale
                 </span>
                 <input
                   type="number"
@@ -141,6 +141,27 @@ export default function ProgramSessionEditor({
                   placeholder="--"
                   className="w-full rounded-xl border border-outline-variant/80 bg-white px-3 py-2 text-sm font-bold outline-none"
                 />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-[0.22em] text-outline">
+                  Riferimento %
+                </span>
+                <select
+                  value={exercise.percentageReference || "oneRM"}
+                  onChange={(event) =>
+                    onUpdateExercise(
+                      session.id,
+                      exerciseIndex,
+                      "percentageReference",
+                      event.target.value as Exercise["percentageReference"]
+                    )
+                  }
+                  className="w-full rounded-xl border border-outline-variant/80 bg-white px-3 py-2 text-sm font-bold outline-none"
+                >
+                  <option value="oneRM">1RM</option>
+                  <option value="topSet">@ / Top Set</option>
+                </select>
               </label>
             </div>
           </div>

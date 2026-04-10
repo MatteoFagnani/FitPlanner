@@ -88,3 +88,27 @@ export function toggleProgramSessionCompletionRequest(
     }),
   });
 }
+
+export function updateExerciseLoadRequest(
+  programId: number,
+  weekId: string,
+  sessionId: string,
+  exerciseId: string,
+  performedLoad: number | null,
+  expectedUpdatedAt: string
+) {
+  return requestJson<ProgramResponse>(`/api/programs/${programId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "update-exercise-load",
+      weekId,
+      sessionId,
+      exerciseId,
+      performedLoad,
+      expectedUpdatedAt,
+    }),
+  });
+}

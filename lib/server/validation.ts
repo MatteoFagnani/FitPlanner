@@ -28,7 +28,9 @@ const exerciseSchema = z.object({
   method: z.string().trim().max(60).optional(),
   notes: z.string().trim().max(500).optional(),
   percentage: safeNumber.min(0).max(100).optional(),
+  percentageReference: z.enum(["oneRM", "topSet"]).optional(),
   load: safeNumber.min(0).max(5000).optional(),
+  performedLoad: safeNumber.min(0).max(5000).optional(),
 });
 
 const sessionSchema = z.object({
@@ -71,6 +73,15 @@ export const toggleSessionCompletionSchema = z.object({
   action: z.literal("toggle-session-completion"),
   weekId: nonEmptyString.max(80),
   sessionId: nonEmptyString.max(80),
+  expectedUpdatedAt: z.string().datetime(),
+});
+
+export const updateExerciseLoadSchema = z.object({
+  action: z.literal("update-exercise-load"),
+  weekId: nonEmptyString.max(80),
+  sessionId: nonEmptyString.max(80),
+  exerciseId: nonEmptyString.max(80),
+  performedLoad: safeNumber.min(0).max(5000).nullable(),
   expectedUpdatedAt: z.string().datetime(),
 });
 
