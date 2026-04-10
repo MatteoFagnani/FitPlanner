@@ -13,6 +13,7 @@ import {
   updateExerciseLoadRequest,
   updateProgramRequest,
 } from "@/lib/client/programs";
+import { normalizeExerciseName, removeOneRM, upsertOneRM } from "@/lib/one-rm";
 
 function replaceProgram(programs: Program[], nextProgram: Program) {
   return programs.map((program) => (program.id === nextProgram.id ? nextProgram : program));
@@ -136,26 +137,22 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
   setUserOneRM: async (exercise, value) => {
     const state = get();
     if (!state.currentUser) return false;
+    const normalizedExercise = normalizeExerciseName(exercise);
+    if (!normalizedExercise || !Number.isFinite(value)) {
+      return false;
+    }
 
     const previousCurrentUser = state.currentUser;
-    const existingIndex = state.currentUser.oneRMs.findIndex((rm) => rm.exercise === exercise);
-    const newOneRMs = [...state.currentUser.oneRMs];
-
-    if (existingIndex >= 0) {
-      newOneRMs[existingIndex] = { exercise, value };
-    } else {
-      newOneRMs.push({ exercise, value });
-    }
 
     set({
       currentUser: {
         ...state.currentUser,
-        oneRMs: newOneRMs,
+        oneRMs: upsertOneRM(state.currentUser.oneRMs, { exercise: normalizedExercise, value }),
       },
     });
 
     try {
-      const data = await saveOneRM(exercise, value);
+      const data = await saveOneRM(normalizedExercise, value);
       set((currentState) => ({
         currentUser: currentState.currentUser
           ? {
@@ -176,17 +173,21 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
   removeUserOneRM: async (exercise) => {
     const state = get();
     if (!state.currentUser) return false;
+    const normalizedExercise = normalizeExerciseName(exercise);
+    if (!normalizedExercise) {
+      return false;
+    }
 
     const previousCurrentUser = state.currentUser;
     set({
       currentUser: {
         ...previousCurrentUser,
-        oneRMs: previousCurrentUser.oneRMs.filter((rm) => rm.exercise !== exercise),
+        oneRMs: removeOneRM(previousCurrentUser.oneRMs, normalizedExercise),
       },
     });
 
     try {
-      const data = await deleteOneRM(exercise);
+      const data = await deleteOneRM(normalizedExercise);
       set((currentState) => ({
         currentUser: currentState.currentUser
           ? {
