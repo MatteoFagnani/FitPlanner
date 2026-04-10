@@ -5,7 +5,7 @@ import WorkoutSession from "@/components/ui/WorkoutSession";
 import { Program, User } from "@/lib/types";
 import { useStore } from "@/lib/store/useStore";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { isAssignedToProgram } from "@/lib/server/program-access";
 import { getCalculatedExerciseLoad } from "@/lib/training-loads";
 
@@ -160,14 +160,77 @@ function ProgramWeekViewport({
 
 export default function TrainingPage() {
   const { currentUser, programs, isProgramsHydrated } = useStore();
+  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
+  const [programDirection, setProgramDirection] = useState(0);
 
-  const activeProgram = currentUser
-    ? programs.find(
+  const assignedPrograms = useMemo(
+    () =>
+      currentUser
+        ? programs.filter(
         (program) =>
           (!program.status || program.status === "active") &&
           isAssignedToProgram(program, currentUser.id)
       )
-    : undefined;
+        : [],
+    [currentUser, programs]
+  );
+
+  const persistedProgramId = useMemo(() => {
+    if (!currentUser || typeof window === "undefined") {
+      return null;
+    }
+
+    const storedProgramId = window.localStorage.getItem(
+      `fitplanner-selected-program:${currentUser.id}`
+    );
+    const parsedStoredProgramId = storedProgramId ? Number(storedProgramId) : null;
+
+    return parsedStoredProgramId !== null && Number.isInteger(parsedStoredProgramId)
+      ? parsedStoredProgramId
+      : null;
+  }, [currentUser]);
+
+  const handleSelectProgram = (programId: number) => {
+    setSelectedProgramId(programId);
+
+    if (currentUser && typeof window !== "undefined") {
+      window.localStorage.setItem(`fitplanner-selected-program:${currentUser.id}`, String(programId));
+    }
+  };
+
+  const resolvedSelectedProgramId =
+    selectedProgramId !== null &&
+    assignedPrograms.some((program) => program.id === selectedProgramId)
+      ? selectedProgramId
+      : persistedProgramId !== null &&
+          assignedPrograms.some((program) => program.id === persistedProgramId)
+        ? persistedProgramId
+        : assignedPrograms[0]?.id ?? null;
+
+  const activeProgramIndex = assignedPrograms.findIndex(
+    (program) => program.id === resolvedSelectedProgramId
+  );
+
+  const goToPreviousProgram = () => {
+    if (activeProgramIndex <= 0) return;
+    const previousProgram = assignedPrograms[activeProgramIndex - 1];
+    if (previousProgram) {
+      setProgramDirection(-1);
+      handleSelectProgram(previousProgram.id);
+    }
+  };
+
+  const goToNextProgram = () => {
+    if (activeProgramIndex < 0 || activeProgramIndex >= assignedPrograms.length - 1) return;
+    const nextProgram = assignedPrograms[activeProgramIndex + 1];
+    if (nextProgram) {
+      setProgramDirection(1);
+      handleSelectProgram(nextProgram.id);
+    }
+  };
+
+  const activeProgram =
+    assignedPrograms.find((program) => program.id === resolvedSelectedProgramId) ?? assignedPrograms[0];
 
   if (!currentUser) return null;
 
@@ -229,6 +292,49 @@ export default function TrainingPage() {
             {activeProgram.title}
           </h2>
         </div>
+
+        {assignedPrograms.length > 1 && (
+          <div className="flex items-center justify-between rounded-[1.5rem] border border-outline-variant/80 bg-white px-3 py-3 shadow-sm">
+            <button
+              type="button"
+              onClick={goToPreviousProgram}
+              disabled={activeProgramIndex <= 0}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-primary disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Programma precedente"
+            >
+              <MaterialIcon name="arrow_back_ios_new" className="text-sm" />
+            </button>
+
+            <AnimatePresence mode="wait" custom={programDirection}>
+              <motion.div
+                key={activeProgram.id}
+                custom={programDirection}
+                initial={{ opacity: 0, x: programDirection >= 0 ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: programDirection >= 0 ? -20 : 20 }}
+                transition={{ duration: 0.2 }}
+                className="min-w-0 flex-1 px-3 text-center"
+              >
+                <p className="truncate text-[11px] font-black uppercase tracking-[0.18em] text-on-surface">
+                  {activeProgram.title}
+                </p>
+                <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-outline">
+                  {activeProgramIndex + 1} / {assignedPrograms.length}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            <button
+              type="button"
+              onClick={goToNextProgram}
+              disabled={activeProgramIndex === -1 || activeProgramIndex >= assignedPrograms.length - 1}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest text-primary disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Programma successivo"
+            >
+              <MaterialIcon name="arrow_forward_ios" className="text-sm" />
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
           <div className="rounded-2xl border border-outline-variant/80 bg-white p-4 shadow-sm">

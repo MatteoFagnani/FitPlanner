@@ -441,6 +441,14 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
       return false;
     }
 
+    const previousPrograms = get().programs;
+    set((state) => ({
+      isProgramsHydrated: true,
+      programs: state.programs.map((program) =>
+        program.id === id ? { ...program, status: "archived" } : program
+      ),
+    }));
+
     try {
       const data = await patchProgramStatusRequest(id, "archived", existingProgram.updatedAt);
       set((state) => ({
@@ -454,10 +462,12 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
         return false;
       }
       if (error instanceof ApiError && error.status === 409) {
+        set({ programs: previousPrograms });
         await get().hydrateProgramsFromDatabase();
         return false;
       }
       console.error("Failed to archive program", error);
+      set({ programs: previousPrograms });
       return false;
     }
   },
@@ -467,6 +477,14 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
     if (!existingProgram?.updatedAt) {
       return false;
     }
+
+    const previousPrograms = get().programs;
+    set((state) => ({
+      isProgramsHydrated: true,
+      programs: state.programs.map((program) =>
+        program.id === id ? { ...program, status: "active" } : program
+      ),
+    }));
 
     try {
       const data = await patchProgramStatusRequest(id, "active", existingProgram.updatedAt);
@@ -481,10 +499,12 @@ export const useStore = create<FitPlannerState>()((set, get) => ({
         return false;
       }
       if (error instanceof ApiError && error.status === 409) {
+        set({ programs: previousPrograms });
         await get().hydrateProgramsFromDatabase();
         return false;
       }
       console.error("Failed to restore program", error);
+      set({ programs: previousPrograms });
       return false;
     }
   },

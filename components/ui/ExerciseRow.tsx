@@ -66,13 +66,13 @@ export default function ExerciseRow({ exercise, isSavingLoad = false, onSaveLoad
         </span>
       </div>
 
-      <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
-        <div className="flex items-center justify-center rounded-xl bg-primary/8 px-3 py-2">
-          <p className="text-[11px] font-black tabular-nums text-primary">{loadLabel}</p>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="flex min-w-0 items-center justify-center rounded-xl bg-primary/8 px-2 py-2">
+          <p className="truncate text-[11px] font-black tabular-nums text-primary">{loadLabel}</p>
         </div>
 
-        <div className="rounded-xl border border-outline-variant/80 bg-surface-container-lowest px-1 py-1">
-          <div className="flex items-center gap-2">
+        <div className="min-w-0 rounded-xl border border-outline-variant/80 bg-surface-container-lowest px-1 py-1">
+          <div className="flex min-w-0 items-center gap-1">
             <input
               key={`${exercise.id}-${exercise.performedLoad ?? "empty"}`}
               ref={inputRef}
@@ -82,7 +82,7 @@ export default function ExerciseRow({ exercise, isSavingLoad = false, onSaveLoad
               step="0.5"
               defaultValue={formatInputValue(exercise.performedLoad)}
               placeholder={exercise.performedLoad ? performedLoadLabel : exercise.load ? String(exercise.load) : "kg"}
-              className="h-8 min-w-0 flex-1 rounded-lg border border-outline-variant/80 bg-white px-2 text-[11px] font-semibold tabular-nums text-on-surface outline-none placeholder:text-outline/45 focus:border-primary"
+              className="h-8 min-w-0 w-0 flex-1 rounded-lg border border-outline-variant/80 bg-white px-2 text-[11px] font-semibold tabular-nums text-on-surface outline-none placeholder:text-outline/45 focus:border-primary"
             />
             <button
               type="button"
