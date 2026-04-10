@@ -80,6 +80,44 @@ describe("training-loads", () => {
     expect(load).toBe(150);
   });
 
+  test("uses squat 1RM for descriptive squat variations", () => {
+    const user = createUser();
+    const program = createProgram([]);
+
+    const load = getCalculatedExerciseLoad(
+      createExercise({
+        name: 'Squat fermo 2" secondi sopra il parallelo',
+        reps: 5,
+        percentage: 80,
+      }),
+      user,
+      program,
+      2,
+      1
+    );
+
+    expect(load).toBe(160);
+  });
+
+  test("does not treat split squat as the main squat 1RM", () => {
+    const user = createUser();
+    const program = createProgram([]);
+
+    const load = getCalculatedExerciseLoad(
+      createExercise({
+        name: "Bulgarian Split Squat",
+        reps: 8,
+        percentage: 75,
+      }),
+      user,
+      program,
+      2,
+      1
+    );
+
+    expect(load).toBe(0);
+  });
+
   test("estimates next load from historical reps and RPE", () => {
     const user = createUser();
     const program = createProgram([

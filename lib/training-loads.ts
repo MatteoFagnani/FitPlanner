@@ -5,6 +5,77 @@ function normalizeText(value?: string) {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function normalizeExerciseIdentity(value?: string) {
+  return normalizeText(value)
+    .replace(/["']/g, "")
+    .replace(/[()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const MOVEMENT_PATTERNS = [
+  {
+    key: "squat",
+    includes: [/\bsquat\b/, /\bback squat\b/, /\blow bar squat\b/, /\bhigh bar squat\b/],
+    excludes: [
+      /\bsplit squat\b/,
+      /\bhack squat\b/,
+      /\bbelt squat\b/,
+      /\bpendulum squat\b/,
+      /\bgoblet squat\b/,
+      /\bpistol squat\b/,
+      /\bjump squat\b/,
+      /\bsissy squat\b/,
+      /\bcyclist squat\b/,
+    ],
+  },
+  {
+    key: "bench",
+    includes: [/\bbench\b/, /\bbench press\b/, /\bpanca\b/, /\bpanca piana\b/, /\bpanca piana spoto\b/, /\bpanca piana overloading\b/],
+    excludes: [/\bincline\b/, /\bdecline\b/, /\bdumbbell\b/, /\bmanubri\b/],
+  },
+  {
+    key: "deadlift",
+    includes: [/\bdeadlift\b/, /\bstacco\b/],
+    excludes: [/\brdl\b/, /\bromanian\b/, /\bsnatch grip\b/, /\bdeficit\b/],
+  },
+] as const;
+
+function getPrimaryMovementKey(value?: string) {
+  const normalized = normalizeExerciseIdentity(value);
+
+  for (const pattern of MOVEMENT_PATTERNS) {
+    if (!pattern.includes.some((regex) => regex.test(normalized))) {
+      continue;
+    }
+
+    if (pattern.excludes.some((regex) => regex.test(normalized))) {
+      return null;
+    }
+
+    return pattern.key;
+  }
+
+  return null;
+}
+
+function getUserOneRMValue(user: User, exerciseName: string) {
+  const normalizedExerciseName = normalizeText(exerciseName);
+  const exactMatch = user.oneRMs.find((rm) => normalizeText(rm.exercise) === normalizedExerciseName)?.value;
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const primaryMovementKey = getPrimaryMovementKey(exerciseName);
+  if (!primaryMovementKey) {
+    return null;
+  }
+
+  return (
+    user.oneRMs.find((rm) => getPrimaryMovementKey(rm.exercise) === primaryMovementKey)?.value ?? null
+  );
+}
+
 function parseRpe(method?: string) {
   const match = method?.match(/rpe\s*(\d+(?:[.,]\d+)?)/i);
   if (!match) {
@@ -151,7 +222,7 @@ export function getCalculatedExerciseLoad(
   const topSet = parseTopSet(exercise.method);
 
   if (exercise.percentage && percentageReference === "oneRM") {
-    const userRM = user.oneRMs.find((rm) => normalizeText(rm.exercise) === normalizeText(exercise.name))?.value;
+    const userRM = getUserOneRMValue(user, exercise.name);
     if (userRM) {
       return calculateLoad(exercise.percentage, userRM);
     }
@@ -199,7 +270,7 @@ export function getCalculatedExerciseLoad(
   }
 
   if (percentageReference === "topSet" && exercise.percentage && topSet) {
-    const userRM = user.oneRMs.find((rm) => normalizeText(rm.exercise) === normalizeText(exercise.name))?.value;
+    const userRM = getUserOneRMValue(user, exercise.name);
     if (userRM) {
       const topSetLoad = estimateLoadFromEquivalentMax(
         userRM,
