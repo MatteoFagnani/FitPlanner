@@ -41,7 +41,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!hideShell && <TopBar />}
-      <main className={!hideShell ? "pb-24 pt-16" : ""}>
+      <main className={!hideShell ? "pb-[calc(6rem+env(safe-area-inset-bottom))] pt-16" : ""}>
         {children}
       </main>
       {!hideShell && <BottomNav />}

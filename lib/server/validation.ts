@@ -20,6 +20,11 @@ export const oneRMDeleteSchema = z.object({
   exercise: nonEmptyString.max(80),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  newPassword: z.string().min(8).max(200),
+});
+
 const exerciseSchema = z.object({
   id: nonEmptyString.max(80),
   name: z.string().trim().max(120),

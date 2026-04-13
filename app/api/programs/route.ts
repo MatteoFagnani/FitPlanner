@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializeProgram } from "@/lib/server/programs";
 import { getAuthenticatedUser } from "@/lib/server/auth";
@@ -18,9 +19,25 @@ export async function GET() {
     where: user.role === "coach" ? { coachId: user.id } : undefined,
     orderBy: { createdAt: "desc" },
   });
+  const programIds = programs.map((program) => program.id);
+  const userProgresses =
+    programIds.length > 0
+      ? await prisma.$queryRaw<Array<{
+          programId: number;
+          completedSessionIds: Prisma.JsonValue | null;
+          performedLoads: Prisma.JsonValue | null;
+        }>>`
+          SELECT "programId", "completedSessionIds", "performedLoads"
+          FROM "ProgramProgress"
+          WHERE "userId" = ${user.id} AND "programId" IN (${Prisma.join(programIds)})
+        `
+      : [];
+  const progressByProgramId = new Map(
+    userProgresses.map((progress) => [progress.programId, progress] as const)
+  );
 
   const serializedPrograms = programs
-    .map(serializeProgram)
+    .map((program) => serializeProgram(program, progressByProgramId.get(program.id)))
     .filter((program) => {
       if (user.role === "coach") return true;
 

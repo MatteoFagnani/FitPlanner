@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Exercise } from "@/lib/types";
 import MaterialIcon from "@/components/icons/MaterialIcon";
 
@@ -22,27 +22,58 @@ function formatInputValue(value?: number) {
 
 export default function ExerciseRow({ exercise, isSavingLoad = false, onSaveLoad }: ExerciseRowProps) {
   const loadLabel = formatLoad(exercise.load);
-  const performedLoadLabel = formatLoad(exercise.performedLoad);
   const percentageLabel = exercise.percentage
     ? `${exercise.percentage}%${exercise.percentageReference === "topSet" ? "@" : "1RM"}`
     : "-";
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedValueRef = useRef<number | null>(exercise.performedLoad ?? null);
+  const [inputValue, setInputValue] = useState(() => formatInputValue(exercise.performedLoad));
 
-  const handleSave = () => {
-    if (!onSaveLoad) return;
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
-    const normalizedValue = inputRef.current?.value.trim() ?? "";
+  const getNormalizedValue = () => {
+    const normalizedValue = inputRef.current?.value.trim() ?? inputValue.trim();
     if (!normalizedValue) {
-      onSaveLoad(null);
-      return;
+      return null;
     }
 
     const parsed = Number(normalizedValue.replace(",", "."));
     if (!Number.isFinite(parsed) || parsed < 0) {
+      return undefined;
+    }
+
+    return parsed;
+  };
+
+  const saveCurrentValue = () => {
+    if (!onSaveLoad) return;
+
+    const normalizedValue = getNormalizedValue();
+    if (normalizedValue === undefined || normalizedValue === lastSavedValueRef.current) {
       return;
     }
 
-    onSaveLoad(parsed);
+    lastSavedValueRef.current = normalizedValue;
+    onSaveLoad(normalizedValue);
+  };
+
+  const queueSave = () => {
+    if (!onSaveLoad) return;
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+      saveCurrentValue();
+    }, 550);
   };
 
   return (
@@ -71,31 +102,29 @@ export default function ExerciseRow({ exercise, isSavingLoad = false, onSaveLoad
           <p className="truncate text-[11px] font-black tabular-nums text-primary">{loadLabel}</p>
         </div>
 
-        <div className="min-w-0 rounded-xl border border-outline-variant/80 bg-surface-container-lowest px-1 py-1">
-          <div className="flex min-w-0 items-center gap-1">
+        <div className="min-w-0 rounded-xl border border-outline-variant/80 bg-surface-container-lowest px-2 py-1">
+          <div className="flex min-w-0 items-center">
             <input
-              key={`${exercise.id}-${exercise.performedLoad ?? "empty"}`}
               ref={inputRef}
               type="number"
               inputMode="decimal"
               min="0"
               step="0.5"
-              defaultValue={formatInputValue(exercise.performedLoad)}
-              placeholder={exercise.performedLoad ? performedLoadLabel : exercise.load ? String(exercise.load) : "kg"}
-              className="h-8 min-w-0 w-0 flex-1 rounded-lg border border-outline-variant/80 bg-white px-2 text-[11px] font-semibold tabular-nums text-on-surface outline-none placeholder:text-outline/45 focus:border-primary"
+              value={inputValue}
+              onChange={(event) => {
+                setInputValue(event.target.value);
+                queueSave();
+              }}
+              onBlur={saveCurrentValue}
+              placeholder={exercise.load ? String(exercise.load) : "kg"}
+              className="h-8 min-w-0 w-full rounded-lg border border-outline-variant/80 bg-white px-2 pr-8 text-[11px] font-semibold tabular-nums text-on-surface outline-none placeholder:text-outline/45 focus:border-primary"
             />
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSavingLoad}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-sm disabled:opacity-60"
-              aria-label="Salva carico effettivo"
-            >
+            <div className="pointer-events-none -ml-7 flex h-8 w-7 shrink-0 items-center justify-center text-outline">
               <MaterialIcon
-                name={isSavingLoad ? "progress_activity" : "done"}
-                className={`text-sm ${isSavingLoad ? "animate-spin" : ""}`}
+                name={isSavingLoad ? "progress_activity" : "edit"}
+                className={`text-sm ${isSavingLoad ? "animate-spin text-primary" : ""}`}
               />
-            </button>
+            </div>
           </div>
         </div>
       </div>

@@ -9,6 +9,28 @@ import { useMemo, useState } from "react";
 import { isAssignedToProgram } from "@/lib/server/program-access";
 import { getCalculatedExerciseLoad } from "@/lib/training-loads";
 
+function getNextPendingLocation(program: Program) {
+  for (let weekIndex = 0; weekIndex < program.weeks.length; weekIndex += 1) {
+    const week = program.weeks[weekIndex];
+    const nextSession = week.sessions.find((session) => !session.completed);
+
+    if (nextSession) {
+      return {
+        weekIndex,
+        sessionId: nextSession.id,
+      };
+    }
+  }
+
+  const fallbackWeekIndex = Math.max(0, program.weeks.length - 1);
+  const fallbackWeek = program.weeks[fallbackWeekIndex];
+
+  return {
+    weekIndex: fallbackWeekIndex,
+    sessionId: fallbackWeek?.sessions[0]?.id ?? null,
+  };
+}
+
 function ProgramWeekViewport({
   activeProgram,
   currentUser,
@@ -17,13 +39,14 @@ function ProgramWeekViewport({
   currentUser: User;
 }) {
   const { toggleSessionCompletion, updateExerciseLoad } = useStore();
-  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(() => getNextPendingLocation(activeProgram).weekIndex);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [updatingSessionId, setUpdatingSessionId] = useState<string | null>(null);
   const [updatingExerciseId, setUpdatingExerciseId] = useState<string | null>(null);
   const currentWeek = activeProgram.weeks[currentWeekIndex] ?? activeProgram.weeks[0];
   const isCurrentWeekCompleted =
     currentWeek.sessions.length > 0 && currentWeek.sessions.every((session) => session.completed);
+  const nextPendingLocation = useMemo(() => getNextPendingLocation(activeProgram), [activeProgram]);
 
   const goToPreviousWeek = () => {
     setCurrentWeekIndex((current) => Math.max(0, current - 1));
@@ -129,7 +152,7 @@ function ProgramWeekViewport({
               <WorkoutSession
                 key={session.id}
                 title={session.title}
-                defaultExpanded={session.order === 1}
+                defaultExpanded={session.id === nextPendingLocation.sessionId}
                 completed={Boolean(session.completed)}
                 isUpdatingCompletion={updatingSessionId === session.id}
                 updatingExerciseId={updatingExerciseId}

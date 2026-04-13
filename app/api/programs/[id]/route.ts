@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializeProgram } from "@/lib/server/programs";
 import { getAuthenticatedUser } from "@/lib/server/auth";
@@ -12,10 +13,65 @@ import {
 import { assertSameOrigin } from "@/lib/server/request-security";
 import { canCoachManageProgram, canUserToggleProgramSession } from "@/lib/server/program-access";
 import { toProgramUpdateInput } from "@/lib/server/program-write";
+import {
+  hasExercise,
+  hasSession,
+  parseUserProgramProgress,
+  toggleCompletedSession,
+  updatePerformedLoad,
+} from "@/lib/server/program-progress";
 
 function parseProgramId(value: string) {
   const programId = Number(value);
   return Number.isInteger(programId) && programId > 0 ? programId : null;
+}
+
+type ProgramProgressRow = {
+  programId: number;
+  userId: number;
+  completedSessionIds: Prisma.JsonValue | null;
+  performedLoads: Prisma.JsonValue | null;
+};
+
+async function getUserProgramProgress(programId: number, userId: number) {
+  const rows = await prisma.$queryRaw<ProgramProgressRow[]>`
+    SELECT "programId", "userId", "completedSessionIds", "performedLoads"
+    FROM "ProgramProgress"
+    WHERE "programId" = ${programId} AND "userId" = ${userId}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function upsertUserProgramProgress(
+  programId: number,
+  userId: number,
+  completedSessionIds: string[],
+  performedLoads: Record<string, number>
+) {
+  const completedSessionIdsJson = JSON.stringify(completedSessionIds);
+  const performedLoadsJson = JSON.stringify(performedLoads);
+
+  const rows = await prisma.$queryRaw<ProgramProgressRow[]>`
+    INSERT INTO "ProgramProgress" ("programId", "userId", "completedSessionIds", "performedLoads", "createdAt", "updatedAt")
+    VALUES (
+      ${programId},
+      ${userId},
+      CAST(${completedSessionIdsJson} AS jsonb),
+      CAST(${performedLoadsJson} AS jsonb),
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT ("programId", "userId")
+    DO UPDATE SET
+      "completedSessionIds" = CAST(${completedSessionIdsJson} AS jsonb),
+      "performedLoads" = CAST(${performedLoadsJson} AS jsonb),
+      "updatedAt" = NOW()
+    RETURNING "programId", "userId", "completedSessionIds", "performedLoads"
+  `;
+
+  return rows[0] ?? null;
 }
 
 export async function PUT(
@@ -126,46 +182,26 @@ export async function PATCH(
       return NextResponse.json({ error: "Week and session are required" }, { status: 400 });
     }
 
-    if (existingProgram.updatedAt.toISOString() !== body.expectedUpdatedAt) {
-      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+    if (!hasSession(serializedProgram, body.weekId, body.sessionId)) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    const updatedWeeks = serializedProgram.weeks.map((week) => {
-      if (week.id !== body.weekId) {
-        return week;
-      }
+    const existingProgress = await getUserProgramProgress(id, user.id);
+    const nextProgress = toggleCompletedSession(parseUserProgramProgress(existingProgress), body.sessionId);
 
-      const sessions = week.sessions.map((session) =>
-        session.id === body.sessionId ? { ...session, completed: !session.completed } : session
-      );
-
-      return {
-        ...week,
-        sessions,
-        completed: sessions.length > 0 && sessions.every((session) => session.completed),
-      };
-    });
-
-    const updateResult = await prisma.program.updateMany({
-      where: {
-        id,
-        updatedAt: existingProgram.updatedAt,
-      },
-      data: {
-        weeks: updatedWeeks as unknown as import("@prisma/client").Prisma.InputJsonValue,
-      },
-    });
-
-    if (updateResult.count === 0) {
-      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
-    }
+    const savedProgress = await upsertUserProgramProgress(
+      id,
+      user.id,
+      nextProgress.completedSessionIds,
+      nextProgress.performedLoads
+    );
 
     const updatedProgram = await prisma.program.findUnique({ where: { id } });
     if (!updatedProgram) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ program: serializeProgram(updatedProgram) });
+    return NextResponse.json({ program: serializeProgram(updatedProgram, savedProgress) });
   }
 
   if ("action" in body && body.action === "update-exercise-load") {
@@ -173,57 +209,30 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (existingProgram.updatedAt.toISOString() !== body.expectedUpdatedAt) {
-      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
+    if (!hasExercise(serializedProgram, body.weekId, body.sessionId, body.exerciseId)) {
+      return NextResponse.json({ error: "Exercise not found" }, { status: 404 });
     }
 
-    const updatedWeeks = serializedProgram.weeks.map((week) => {
-      if (week.id !== body.weekId) {
-        return week;
-      }
+    const existingProgress = await getUserProgramProgress(id, user.id);
+    const nextProgress = updatePerformedLoad(
+      parseUserProgramProgress(existingProgress),
+      body.exerciseId,
+      body.performedLoad
+    );
 
-      return {
-        ...week,
-        sessions: week.sessions.map((session) => {
-          if (session.id !== body.sessionId) {
-            return session;
-          }
-
-          return {
-            ...session,
-            exercises: session.exercises.map((exercise) =>
-              exercise.id === body.exerciseId
-                ? {
-                    ...exercise,
-                    performedLoad: body.performedLoad ?? undefined,
-                  }
-                : exercise
-            ),
-          };
-        }),
-      };
-    });
-
-    const updateResult = await prisma.program.updateMany({
-      where: {
-        id,
-        updatedAt: existingProgram.updatedAt,
-      },
-      data: {
-        weeks: updatedWeeks as unknown as import("@prisma/client").Prisma.InputJsonValue,
-      },
-    });
-
-    if (updateResult.count === 0) {
-      return NextResponse.json({ error: "Program has changed. Refresh and retry." }, { status: 409 });
-    }
+    const savedProgress = await upsertUserProgramProgress(
+      id,
+      user.id,
+      nextProgress.completedSessionIds,
+      nextProgress.performedLoads
+    );
 
     const updatedProgram = await prisma.program.findUnique({ where: { id } });
     if (!updatedProgram) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ program: serializeProgram(updatedProgram) });
+    return NextResponse.json({ program: serializeProgram(updatedProgram, savedProgress) });
   }
 
   if (!isCoachOwner) {

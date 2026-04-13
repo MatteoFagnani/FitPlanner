@@ -37,6 +37,10 @@ function isBcryptHash(value: string) {
   return /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 12);
+}
+
 export async function verifyPassword(userId: number, storedPassword: string, candidatePassword: string) {
   if (isBcryptHash(storedPassword)) {
     return bcrypt.compare(candidatePassword, storedPassword);
@@ -46,7 +50,7 @@ export async function verifyPassword(userId: number, storedPassword: string, can
     return false;
   }
 
-  const hashedPassword = await bcrypt.hash(candidatePassword, 12);
+  const hashedPassword = await hashPassword(candidatePassword);
   await prisma.user.update({
     where: { id: userId },
     data: { password: hashedPassword },

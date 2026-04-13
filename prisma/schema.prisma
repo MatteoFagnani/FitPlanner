@@ -24,6 +24,7 @@ model User {
   createdAt        DateTime     @default(now())
   oneRMs           OneRM[]
   programsCoached  Program[]
+  programProgresses ProgramProgress[]
   sessions         Session[]
 }
 
@@ -40,15 +41,32 @@ model OneRM {
 }
 
 model Program {
-  id         Int      @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   title      String
-  status     ProgramStatus   @default(active)
+  status     ProgramStatus     @default(active)
   coachId    Int
   athleteIds Json
   weeks      Json
   createdAt  DateTime
-  updatedAt  DateTime @updatedAt
-  coach      User     @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  updatedAt  DateTime          @updatedAt
+  coach      User              @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  progresses ProgramProgress[]
+}
+
+model ProgramProgress {
+  id                  Int      @id @default(autoincrement())
+  completedSessionIds Json     @default("[]")
+  performedLoads      Json     @default("{}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  programId           Int
+  userId              Int
+  program             Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, userId])
+  @@index([programId])
+  @@index([userId])
 }
 
 model Session {

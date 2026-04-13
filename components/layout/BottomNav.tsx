@@ -35,7 +35,10 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-outline-variant/80 bg-white/95 px-2 backdrop-blur-xl shadow-[0_-10px_30px_rgba(15,23,42,0.08)]">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-outline-variant/80 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.35rem)] backdrop-blur-xl shadow-[0_-10px_30px_rgba(15,23,42,0.08)]"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.35rem)" }}
+    >
       <div className="mx-auto flex h-20 max-w-md items-center justify-around">
         {navItems.map((item) => (
           <Link

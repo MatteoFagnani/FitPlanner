@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ExerciseRow from "@/components/ui/ExerciseRow";
 import MaterialIcon from "@/components/icons/MaterialIcon";
 import { Exercise } from "@/lib/types";
@@ -27,6 +27,10 @@ export default function WorkoutSession({
   onSaveExerciseLoad,
 }: WorkoutSessionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  useEffect(() => {
+    setIsExpanded(defaultExpanded);
+  }, [defaultExpanded]);
 
   return (
     <section
@@ -88,7 +92,7 @@ export default function WorkoutSession({
           <div className="space-y-2">
             {exercises.map((exercise) => (
               <ExerciseRow
-                key={exercise.id}
+                key={`${exercise.id}-${exercise.performedLoad ?? "empty"}`}
                 exercise={exercise}
                 isSavingLoad={updatingExerciseId === exercise.id}
                 onSaveLoad={

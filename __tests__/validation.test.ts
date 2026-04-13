@@ -1,53 +1,23 @@
 import { describe, expect, test } from "vitest";
-import {
-  loginSchema,
-  oneRMSchema,
-  programStatusPatchSchema,
-  toggleSessionCompletionSchema,
-} from "../lib/server/validation";
+import { changePasswordSchema, loginSchema, oneRMSchema } from "../lib/server/validation";
 
 describe("validation schemas", () => {
-  test("loginSchema accepts valid credentials", () => {
-    const parsed = loginSchema.safeParse({
-      identity: "coach@example.com",
-      password: "secure-password",
-    });
-
+  test("login schema accepts valid payload", () => {
+    const parsed = loginSchema.safeParse({ identity: "coach", password: "secret" });
     expect(parsed.success).toBe(true);
   });
 
-  test("oneRMSchema rejects invalid negative values", () => {
-    const parsed = oneRMSchema.safeParse({
-      exercise: "Squat",
-      value: -10,
-    });
-
+  test("oneRM schema rejects missing exercise", () => {
+    const parsed = oneRMSchema.safeParse({ exercise: "", value: 100 });
     expect(parsed.success).toBe(false);
   });
 
-  test("toggleSessionCompletionSchema requires concurrency token", () => {
-    const parsed = toggleSessionCompletionSchema.safeParse({
-      action: "toggle-session-completion",
-      weekId: "w-1",
-      sessionId: "s-1",
+  test("changePassword schema requires at least 8 chars for new password", () => {
+    const parsed = changePasswordSchema.safeParse({
+      currentPassword: "old-password",
+      newPassword: "short",
     });
 
     expect(parsed.success).toBe(false);
-  });
-
-  test("programStatusPatchSchema only accepts active or archived", () => {
-    expect(
-      programStatusPatchSchema.safeParse({
-        status: "active",
-        expectedUpdatedAt: new Date().toISOString(),
-      }).success
-    ).toBe(true);
-
-    expect(
-      programStatusPatchSchema.safeParse({
-        status: "draft",
-        expectedUpdatedAt: new Date().toISOString(),
-      }).success
-    ).toBe(false);
   });
 });

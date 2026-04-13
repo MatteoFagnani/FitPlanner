@@ -24,6 +24,65 @@ describe("program-write", () => {
     expect(input.athleteIds).toEqual([2]);
   });
 
+  test("sanitizes user-specific progress before persisting weeks", () => {
+    const input = toProgramCreateInput(
+      createProgram({
+        weeks: [
+          {
+            id: "w-1",
+            order: 1,
+            completed: true,
+            sessions: [
+              {
+                id: "s-1",
+                title: "A",
+                order: 1,
+                completed: true,
+                exercises: [
+                  {
+                    id: "ex-1",
+                    name: "Squat",
+                    sets: 4,
+                    reps: 5,
+                    performedLoad: 150,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      99
+    );
+
+    expect(input.weeks).toEqual([
+      {
+        id: "w-1",
+        order: 1,
+        sessions: [
+          {
+            id: "s-1",
+            title: "A",
+            order: 1,
+            exercises: [
+              {
+                id: "ex-1",
+                name: "Squat",
+                sets: 4,
+                reps: 5,
+                method: undefined,
+                notes: undefined,
+                percentage: undefined,
+                percentageReference: undefined,
+                load: undefined,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
   test("update input falls back to athleteId when athleteIds is missing", () => {
     const input = toProgramUpdateInput(
       createProgram({

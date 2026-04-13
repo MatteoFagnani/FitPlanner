@@ -9,6 +9,10 @@ type OneRMResponse = {
   oneRMs: User["oneRMs"];
 };
 
+type ChangePasswordResponse = {
+  success: true;
+};
+
 export function fetchProfile() {
   return requestJson<ProfileResponse>("/api/profile", {
     method: "GET",
@@ -35,5 +39,15 @@ export function deleteOneRM(exercise: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ exercise }),
+  });
+}
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return requestJson<ChangePasswordResponse>("/api/profile/password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
   });
 }

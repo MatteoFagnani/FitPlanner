@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store/useStore";
 import MaterialIcon from "@/components/icons/MaterialIcon";
 import { useRouter } from "next/navigation";
+import { changePassword } from "@/lib/client/profile";
+import { ApiError } from "@/lib/client/http";
 
 export default function ProfilePage() {
   const { currentUser, setUserOneRM, removeUserOneRM, hydrateCurrentUserFromDatabase, logout } =
@@ -15,6 +17,12 @@ export default function ProfilePage() {
   const [newValue, setNewValue] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isRemovingExercise, setIsRemovingExercise] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [nextPassword, setNextPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -71,6 +79,43 @@ export default function ProfilePage() {
   const startEditing = (exercise: string, currentVal: number) => {
     setEditingExercise(exercise);
     setEditValue(currentVal.toString());
+  };
+
+  const handleChangePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!currentPassword || !nextPassword || !confirmPassword) {
+      setPasswordError("Compila tutti i campi password.");
+      return;
+    }
+
+    if (nextPassword.length < 8) {
+      setPasswordError("La nuova password deve avere almeno 8 caratteri.");
+      return;
+    }
+
+    if (nextPassword !== confirmPassword) {
+      setPasswordError("Le nuove password non coincidono.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      await changePassword(currentPassword, nextPassword);
+      setCurrentPassword("");
+      setNextPassword("");
+      setConfirmPassword("");
+      setPasswordSuccess("Password aggiornata correttamente.");
+    } catch (error) {
+      setPasswordError(
+        error instanceof ApiError ? error.message : "Non sono riuscito ad aggiornare la password."
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const personalMaxes = [...currentUser.oneRMs].sort((left, right) =>
@@ -204,6 +249,62 @@ export default function ProfilePage() {
             </p>
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between border-b border-outline-variant pb-2">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
+            Password
+          </h3>
+          <MaterialIcon name="lock" className="text-xl text-primary" />
+        </div>
+
+        <form
+          onSubmit={handleChangePassword}
+          className="space-y-3 rounded-[1.75rem] border border-outline-variant/80 bg-white p-4 shadow-sm"
+        >
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            placeholder="Password attuale"
+            className="w-full rounded-2xl border border-outline-variant/80 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface outline-none placeholder:text-outline/50 focus:border-primary"
+          />
+          <input
+            type="password"
+            value={nextPassword}
+            onChange={(event) => setNextPassword(event.target.value)}
+            placeholder="Nuova password"
+            className="w-full rounded-2xl border border-outline-variant/80 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface outline-none placeholder:text-outline/50 focus:border-primary"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Conferma nuova password"
+            className="w-full rounded-2xl border border-outline-variant/80 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface outline-none placeholder:text-outline/50 focus:border-primary"
+          />
+
+          {passwordError ? (
+            <p className="text-xs font-semibold text-error">{passwordError}</p>
+          ) : null}
+
+          {passwordSuccess ? (
+            <p className="text-xs font-semibold text-primary">{passwordSuccess}</p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isChangingPassword}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-[0.18em] text-white shadow-sm disabled:opacity-60"
+          >
+            <MaterialIcon
+              name={isChangingPassword ? "progress_activity" : "key"}
+              className={isChangingPassword ? "animate-spin text-base" : "text-base"}
+            />
+            Aggiorna Password
+          </button>
+        </form>
       </section>
 
       <section className="pt-2">
