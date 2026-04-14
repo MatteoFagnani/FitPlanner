@@ -4,10 +4,16 @@
 
 
 @layer base {
+  html {
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-on-surface font-body antialiased;
     min-height: max(884px, 100dvh);
     position: relative;
+    touch-action: manipulation;
   }
 
   body::after {
