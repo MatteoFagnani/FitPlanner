@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store/useStore";
 import TopBar from "@/components/layout/TopBar";
-import BottomNav from "@/components/layout/BottomNav";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -41,10 +40,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!hideShell && <TopBar />}
-      <main className={!hideShell ? "pb-[calc(6rem+env(safe-area-inset-bottom))] pt-16" : ""}>
+      <main className={!hideShell ? "pt-16" : ""}>
         {children}
       </main>
-      {!hideShell && <BottomNav />}
     </>
   );
 }

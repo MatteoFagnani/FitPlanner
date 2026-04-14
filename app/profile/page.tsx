@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store/useStore";
 import MaterialIcon from "@/components/icons/MaterialIcon";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { changePassword } from "@/lib/client/profile";
 import { ApiError } from "@/lib/client/http";
@@ -127,6 +128,15 @@ export default function ProfilePage() {
       <div className="scanline-overlay" />
 
       <section className="space-y-4">
+        <div className="flex items-center">
+          <Link
+            href="/"
+            aria-label="Torna alla schermata allenamento"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant/80 bg-white text-primary shadow-sm transition-colors hover:bg-primary hover:text-white"
+          >
+            <MaterialIcon name="arrow_back" className="text-lg" />
+          </Link>
+        </div>
         <div className="flex items-center gap-2 text-primary">
           <MaterialIcon name="account_circle" className="text-sm" />
           <h2 className="glow-blue text-[10px] font-black uppercase tracking-[0.4em]">

@@ -90,6 +90,15 @@ export default function ProgramsPage() {
       />
 
       <div className="space-y-4">
+        <div className="flex items-center">
+          <Link
+            href="/"
+            aria-label="Torna alla schermata allenamento"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant/80 bg-white text-primary shadow-sm transition-colors hover:bg-primary hover:text-white"
+          >
+            <MaterialIcon name="arrow_back" className="text-lg" />
+          </Link>
+        </div>
         <motion.h2 
           initial={{ opacity: 0, x: -10 }} 
           animate={{ opacity: 1, x: 0 }}
