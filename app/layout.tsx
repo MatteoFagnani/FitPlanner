@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import AuthGuard from "@/components/layout/AuthGuard";
@@ -19,6 +19,13 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "FitPlanner - Kinetic Ledger",
   description: "Advanced Training Management Protocol",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

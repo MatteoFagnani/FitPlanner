@@ -40,7 +40,6 @@ function ProgramWeekViewport({
 }) {
   const { toggleSessionCompletion, updateExerciseLoad } = useStore();
   const [currentWeekIndex, setCurrentWeekIndex] = useState(() => getNextPendingLocation(activeProgram).weekIndex);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [updatingSessionId, setUpdatingSessionId] = useState<string | null>(null);
   const [updatingExerciseId, setUpdatingExerciseId] = useState<string | null>(null);
   const currentWeek = activeProgram.weeks[currentWeekIndex] ?? activeProgram.weeks[0];
@@ -54,25 +53,6 @@ function ProgramWeekViewport({
 
   const goToNextWeek = () => {
     setCurrentWeekIndex((current) => Math.min(activeProgram.weeks.length - 1, current + 1));
-  };
-
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    setTouchStartX(event.touches[0]?.clientX ?? null);
-  };
-
-  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartX === null) return;
-
-    const deltaX = event.changedTouches[0]?.clientX - touchStartX;
-    setTouchStartX(null);
-
-    if (deltaX <= -40) {
-      goToNextWeek();
-    }
-
-    if (deltaX >= 40) {
-      goToPreviousWeek();
-    }
   };
 
   const handleToggleSessionCompletion = async (sessionId: string) => {
@@ -93,11 +73,7 @@ function ProgramWeekViewport({
 
   return (
     <div className="space-y-4">
-      <div
-        className="rounded-[2rem] border border-outline-variant/80 bg-white p-4 shadow-sm sm:p-5"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
+      <div className="rounded-[2rem] border border-outline-variant/80 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex items-center justify-between border-b border-outline-variant/70 pb-4">
           <button
             type="button"
@@ -384,9 +360,6 @@ export default function TrainingPage() {
           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">
             Registro Allenamenti
           </h3>
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">
-            Swipe per cambiare settimana
-          </span>
         </div>
 
         <ProgramWeekViewport key={activeProgram.id} activeProgram={activeProgram} currentUser={currentUser} />

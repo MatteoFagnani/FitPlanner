@@ -15,13 +15,31 @@ function formatLoad(load?: number) {
   return `${load.toFixed(load % 1 === 0 ? 0 : 1)}kg`;
 }
 
+function roundToTrainingLoad(value: number) {
+  return Math.round(value / 2.5) * 2.5;
+}
+
+function getDisplayLoadLabel(exercise: Exercise, currentPerformedLoad?: number | null) {
+  const topSetLoad = currentPerformedLoad ?? exercise.performedLoad ?? exercise.load;
+
+  if (
+    topSetLoad &&
+    exercise.percentageReference === "topSet" &&
+    exercise.percentage !== undefined
+  ) {
+    const backoffLoad = roundToTrainingLoad(topSetLoad * (exercise.percentage / 100));
+    return `${formatLoad(topSetLoad)} / ${formatLoad(backoffLoad)}`;
+  }
+
+  return formatLoad(exercise.load);
+}
+
 function formatInputValue(value?: number) {
   if (value === undefined) return "";
   return value % 1 === 0 ? String(value) : String(value);
 }
 
 export default function ExerciseRow({ exercise, isSavingLoad = false, onSaveLoad }: ExerciseRowProps) {
-  const loadLabel = formatLoad(exercise.load);
   const percentageLabel = exercise.percentage
     ? `${exercise.percentage}%${exercise.percentageReference === "topSet" ? "@" : "1RM"}`
     : "-";
@@ -29,6 +47,16 @@ export default function ExerciseRow({ exercise, isSavingLoad = false, onSaveLoad
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedValueRef = useRef<number | null>(exercise.performedLoad ?? null);
   const [inputValue, setInputValue] = useState(() => formatInputValue(exercise.performedLoad));
+  const parsedInputValue = (() => {
+    const trimmedValue = inputValue.trim();
+    if (!trimmedValue) {
+      return null;
+    }
+
+    const parsed = Number(trimmedValue.replace(",", "."));
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  })();
+  const loadLabel = getDisplayLoadLabel(exercise, parsedInputValue);
 
   useEffect(() => {
     return () => {
