@@ -230,12 +230,13 @@ export function getCalculatedExerciseLoad(
 
   const history = getHistoricalEntries(program, exercise.name, currentWeekOrder, currentSessionOrder);
   const normalizedMethod = normalizeText(exercise.method);
+  const targetUsesRpe = parseRpe(exercise.method) !== null || topSet !== null;
   const exactMethodMatch =
     normalizedMethod.length > 0
       ? [...history].reverse().find((entry) => normalizeText(entry.method) === normalizedMethod)
       : undefined;
   const fallbackEntry = history[history.length - 1];
-  const chosenEntry = exactMethodMatch ?? fallbackEntry;
+  const chosenEntry = targetUsesRpe ? fallbackEntry ?? exactMethodMatch : exactMethodMatch ?? fallbackEntry;
 
   if (chosenEntry) {
     const equivalentMax = estimateEquivalentMax(

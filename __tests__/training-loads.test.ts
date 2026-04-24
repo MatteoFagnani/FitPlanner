@@ -60,6 +60,19 @@ function createProgram(exercises: Exercise[]): Program {
   };
 }
 
+function createProgramWithWeeks(weeks: Program["weeks"]): Program {
+  return {
+    id: 1,
+    title: "Programma",
+    status: "active",
+    coachId: 99,
+    athleteIds: [1],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    weeks,
+  };
+}
+
 describe("training-loads", () => {
   test("uses %1RM when available", () => {
     const user = createUser();
@@ -162,6 +175,76 @@ describe("training-loads", () => {
     );
 
     expect(load).toBe(27.5);
+  });
+
+  test("uses the most recent historical load when progressing between different RPE targets", () => {
+    const user = createUser();
+    const program = createProgramWithWeeks([
+      {
+        id: "w-1",
+        order: 1,
+        sessions: [
+          {
+            id: "s-1",
+            title: "Sessione A",
+            order: 1,
+            exercises: [
+              createExercise({
+                name: "Bench Press",
+                performedLoad: 100,
+                reps: 5,
+                method: "RPE 6",
+              }),
+            ],
+          },
+        ],
+      },
+      {
+        id: "w-2",
+        order: 2,
+        sessions: [
+          {
+            id: "s-2",
+            title: "Sessione A",
+            order: 1,
+            exercises: [
+              createExercise({
+                name: "Bench Press",
+                performedLoad: 95,
+                reps: 5,
+                method: "RPE 8",
+              }),
+            ],
+          },
+        ],
+      },
+      {
+        id: "w-3",
+        order: 3,
+        sessions: [
+          {
+            id: "s-3",
+            title: "Sessione A",
+            order: 1,
+            exercises: [],
+          },
+        ],
+      },
+    ]);
+
+    const load = getCalculatedExerciseLoad(
+      createExercise({
+        name: "Bench Press",
+        reps: 5,
+        method: "RPE 6",
+      }),
+      user,
+      program,
+      3,
+      1
+    );
+
+    expect(load).toBe(90);
   });
 
   test("shows top set load when using top set percentage reference", () => {
