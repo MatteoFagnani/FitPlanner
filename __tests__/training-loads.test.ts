@@ -272,6 +272,88 @@ describe("training-loads", () => {
       1
     );
 
-    expect(load).toBe(100);
+    expect(load).toBe(70);
+  });
+
+  test("keeps a lower target RPE below the previous top set load", () => {
+    const user = createUser();
+    const program = createProgramWithWeeks([
+      {
+        id: "w-1",
+        order: 1,
+        sessions: [
+          {
+            id: "s-1",
+            title: "Sessione A",
+            order: 1,
+            exercises: [
+              createExercise({
+                id: "ex-w1",
+                name: "Squat",
+                reps: 5,
+                sets: 1,
+                method: "5@7 + 4x5",
+                percentage: 90,
+                percentageReference: "topSet",
+                performedLoad: 135,
+              }),
+            ],
+          },
+        ],
+      },
+      {
+        id: "w-2",
+        order: 2,
+        sessions: [
+          {
+            id: "s-2",
+            title: "Sessione A",
+            order: 1,
+            exercises: [
+              createExercise({
+                id: "ex-w2",
+                name: "Squat",
+                reps: 5,
+                sets: 1,
+                method: "5@8 + 4x5",
+                percentage: 87.5,
+                percentageReference: "topSet",
+                performedLoad: 140,
+              }),
+            ],
+          },
+        ],
+      },
+      {
+        id: "w-3",
+        order: 3,
+        sessions: [
+          {
+            id: "s-3",
+            title: "Sessione A",
+            order: 1,
+            exercises: [],
+          },
+        ],
+      },
+    ]);
+
+    const load = getCalculatedExerciseLoad(
+      createExercise({
+        id: "ex-w3",
+        name: "Squat",
+        reps: 5,
+        sets: 1,
+        method: "5@6 + 4x5",
+        percentage: 91,
+        percentageReference: "topSet",
+      }),
+      user,
+      program,
+      3,
+      1
+    );
+
+    expect(load).toBe(132.5);
   });
 });

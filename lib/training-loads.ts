@@ -107,7 +107,8 @@ function roundTrainingLoad(value: number) {
 }
 
 function getRepsInReserve(method?: string) {
-  const rpe = parseRpe(method);
+  const topSet = parseTopSet(method);
+  const rpe = topSet ? topSet.rpe : parseRpe(method);
   if (rpe === null) {
     return null;
   }
@@ -148,10 +149,6 @@ function getBaseHistoricalLoad(exercise: Exercise) {
   const storedLoad = exercise.performedLoad ?? exercise.load;
   if (!storedLoad || storedLoad <= 0) {
     return null;
-  }
-
-  if (exercise.percentageReference === "topSet" && exercise.percentage) {
-    return storedLoad / (exercise.percentage / 100);
   }
 
   return storedLoad;
